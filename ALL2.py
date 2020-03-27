@@ -20,7 +20,7 @@ def argument_parse():
 	parser=argparse.ArgumentParser(description='Preprocessing of vcf file')
 	parser.add_argument("-m","--manifest_file",help="Path to manifest file",required="True",type=Util.FileValidator)
 	parser.add_argument("-o","--output_dir",help="Path to directory where results will be written",required="True")
-	parser.add_argument("-a","--af_cutoff",help="Allele frequency cut-off for varaints",default="0.35")
+	parser.add_argument("-a","--af_cutoff",help="Allele frequency cut-off for variants",default="0.35")
 	return parser
 
 def extract_mutation_information(manifest_file, output_dir):
@@ -164,6 +164,8 @@ def explaination_score(variant_dict,list_of_samples,output_dir):
 			cells_without_germline="-"
 		print()
 		cells_with_mutation=",".join(ordered_col_sum[:cells_carrying_mutation_Nv].index)
+		if cells_with_mutation=="":
+			cells_with_mutation="-"
 		output_line="\t".join(["\t".join(mutation.split("_")),str(explanation_score_mosaic),
 						str(explanation_score_germ),cells_with_mutation])
 		output_file_fh.write(output_line+"\n")
