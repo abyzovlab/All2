@@ -117,8 +117,8 @@ def explaination_score(variant_dict,list_of_samples,output_dir):
 	vaf_ef_file=os.path.join(output_dir,"variant_vaf_per_pair_es.txt")
 	vaf_ef_file_fh=open(vaf_ef_file,'w')
 	es_dict={}
-	output_file_fh.write("#Chrom\tPos\tRef\tAlt\tMosaic_score\tGermline_score\tSample_with_Mosaic\tSamples_without_Germline\n")
-
+	#output_file_fh.write("#Chrom\tPos\tRef\tAlt\tMosaic_score\tGermline_score\tSample_with_Mosaic\tSamples_without_Germline\n")
+	output_file_fh.write("#Chrom\tPos\tRef\tAlt\tMosaic_score\tGermline_score\tSamples_with_mutation\n")
 	# number_of_cells_N is the total number of cells in the experiment
 	total_number_of_cells_N = len(list_of_samples)
 
@@ -153,6 +153,7 @@ def explaination_score(variant_dict,list_of_samples,output_dir):
 		explanation_score_germ=explained_call_n_germ / pairs_list_n
 		cells_with_mosaic=""
 		cells_without_germline=""
+		cells_with_mutation="-"
 		if explanation_score_mosaic==1:
 			cells_with_mosaic=",".join(ordered_col_sum[:cells_carrying_mutation_Nv].index)
 		else:
@@ -161,8 +162,10 @@ def explaination_score(variant_dict,list_of_samples,output_dir):
 			cells_without_germline=",".join(ordered_row_sum[:cells_carrying_mutation_Nv].index)
 		else:
 			cells_without_germline="-"
+		print()
+		cells_with_mutation=",".join(ordered_col_sum[:cells_carrying_mutation_Nv].index)
 		output_line="\t".join(["\t".join(mutation.split("_")),str(explanation_score_mosaic),
-						str(explanation_score_germ),cells_with_mosaic,cells_without_germline])
+						str(explanation_score_germ),cells_with_mutation])
 		output_file_fh.write(output_line+"\n")
 		es_dict[mutation]=[(explanation_score_germ,explanation_score_mosaic),(cells_without_germline,cells_with_mosaic)]
 		
@@ -230,14 +233,14 @@ def main():
 
 	# Extracting variant information from the manifest file.
 	print("Extracting variant information")
-#	variant_dict,pairs_vaf_dict,list_of_samples=extract_mutation_information(manifest_file,output_dir)
+	variant_dict,pairs_vaf_dict,list_of_samples=extract_mutation_information(manifest_file,output_dir)
 	# variant_dict={mutation:[(case,control)]}
         # pairs_vaf_dict={pairs:{mutation:[vaf]}}
 	# list_of_samples = list of all samples in the analysis
 
 	# Generating explaination score
 	print("Generating explaination scores")
-	#explaination_score(variant_dict,list_of_samples,output_dir)	
+	explaination_score(variant_dict,list_of_samples,output_dir)	
 
 	# Plotting
 	print("Plotting")
