@@ -162,7 +162,6 @@ def explaination_score(variant_dict,list_of_samples,output_dir):
 			cells_without_germline=",".join(ordered_row_sum[:cells_carrying_mutation_Nv].index)
 		else:
 			cells_without_germline="-"
-		print()
 		cells_with_mutation=",".join(ordered_col_sum[:cells_carrying_mutation_Nv].index)
 		if cells_with_mutation=="":
 			cells_with_mutation="-"
