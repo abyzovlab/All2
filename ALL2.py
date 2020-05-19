@@ -40,8 +40,8 @@ class ALL2():
 	def comp(self, codon):
 		'''Returns the complement of a sequence'''
 		new_cod=""
-		nuc=["A","G","C","T"]
-		rev_nuc=["T","C","G","A"]
+		nuc=["A","G","C","T","N"]
+		rev_nuc=["T","C","G","A","N"]
 		for i in codon:
 			new_cod=new_cod+rev_nuc[nuc.index(i.upper())]
 		return new_cod
@@ -81,9 +81,29 @@ class ALL2():
 		ALL2_output = arg.get_score_directory
 		output_dir = arg.output_dir
 		mutation_list = arg.mutation
-
+		explaination_file=os.path.join(ALL2_output,"explaination_score.txt")
 		Util.ensure_dir(output_dir)
-
+			
+		explaination_dict={}
+		head = {}
+		for i in open(explaination_file):
+			line=i.strip().split("\t")
+			if i.startswith("#"):
+				for n,j in enumerate(line):
+					head[j]=n
+				continue
+			chrm = line[head["#Chrom"]]
+			pos = line[head["Pos"]]
+			ref = line[head["Ref"]]
+			alt = line[head["Alt"]]
+			mosaic_score = line[head["Mosaic_score"]]
+			germline_score = line[head["Germline_score"]]
+			samples = line[head["Samples_with_mutation"]].split(",")
+			vaf_samples = line[head["VAF_of_samples_with_mutation"]].split(",")
+			mutation="_".join([chrm, pos, ref, alt])	
+			mutation_related_info={"mosaic_score":mosaic_score, "germline_score":germline_score, 
+						"sample":samples, "vaf_samples":vaf_samples}
+			explaination_dict[mutation]=mutation_related_info
 		# loading pickle file
 		print("Loading pickle file")
 		mutation_matrix_file = os.path.join( ALL2_output,"mutation_matrix.pkl" )
@@ -94,11 +114,43 @@ class ALL2():
 		print("Plotting mutation matrix")
 		for mutation in mutation_list:
 			print(mutation)
+			if mutation not in mutation_matrix_dict:
+				print("Mutation "+mutation+" not found")
+				continue
 			mutation_df=mutation_matrix_dict[mutation]
-			plt.figure()
-			sns.heatmap(mutation_df,cmap="Blues",cbar=False)
+			fig, (ax1, ax2)= plt.subplots(1, 2, gridspec_kw={'width_ratios': [8, 1]})
+			sns.heatmap(mutation_df,cmap="Blues",cbar=False, ax = ax1, linewidths=.5)
+			ax1.set_ylim(len(mutation_df.index), 0)
+					
+			list_of_samples=explaination_dict[mutation]["sample"]
+			list_of_samples_vaf=explaination_dict[mutation]["vaf_samples"]
+			vaf_bar_list={}
+			vaf_bar_empty={}
+			for i in mutation_df.columns:
+				if i in list_of_samples:
+					vaf = float(list_of_samples_vaf[list_of_samples.index(i)])
+				else:
+					vaf = 0.0
+				vaf_bar_list[i]=vaf
+				vaf_bar_empty[i]=1.0
+			vaf_df = pd.DataFrame.from_dict(vaf_bar_list, orient = 'index')
+			vaf_df_empty = pd.DataFrame.from_dict(vaf_bar_empty, orient = 'index') 
+			vaf_df.plot(kind = 'barh', xlim=(0.0, 1), legend = False, sharex=True, ax = ax2, color = 'g', alpha = 0.5,
+					title = "VAF", width = 0.7)
+			for n, i in enumerate(ax2.patches):
+				# get_x pulls left or right; get_height pushes up or down
+				ax2.text(0.3, n + 0.30, str(round(i.get_width()*100))+"%", fontsize=6, color='blue')
+			
+			vaf_df_empty.plot(kind = 'barh', xlim=(0.0, 1), legend = False, 
+                                               sharex=True, ax = ax2, color = 'none', width = 0.7, 
+                                              edgecolor = 'blue', alpha = 0.5)
+			ax2.invert_yaxis()
+			ax2.axis("off")
+			ax1.set_title(mutation)
+			ax2.set_title("VAF", fontsize = 10)
+			mosaic_score = explaination_dict[mutation]["mosaic_score"]
+			germline_score = explaination_dict[mutation]["germline_score"]
 			plt.tight_layout()
-			plt.title(mutation)
 			plt.savefig(os.path.join(output_dir,mutation+".png"))
 			plt.close()
 	
@@ -347,17 +399,42 @@ class ALL2():
 	def plot_vaf(self, vaf_dict, af_cutoff, output_dir):
 		""" plotting vaf plots """
 		for sample in vaf_dict:
-			mutation_list={"Mosaic":[],"Germline":[],"Noise":[]}
+			mutation_list_snp={"Mosaic":[],"Germline":[],"Noise":[]}
+			mutation_list_indel={"Mosaic":[],"Germline":[],"Noise":[]}
 			for variant_type in ["Mosaic","Germline","Noise"]:
 				output_file=os.path.join(output_dir,sample+"."+variant_type+".vaf_plot.png")
 				for pos, vaf in vaf_dict[sample][variant_type]:
-					mutation_list[variant_type].append(vaf)
+					chrm, position, ref, alt = pos.split("_")
+					if len(ref)>1 or len(alt)>1:
+						mutation_list_indel[variant_type].append(vaf)
+					else:
+						mutation_list_snp[variant_type].append(vaf)
+		
 				title=variant_type+" VAF distribution for "+sample
-				df = pd.DataFrame.from_dict(mutation_list[variant_type])
-				df.plot(kind='hist',bins=33,range=(0,1),
-						alpha=0.5,legend=None,
-						weights=np.ones_like(df[df.columns[0]]) * 1. / len(df), 
-						title=title)
+				df_snp = pd.DataFrame.from_dict(mutation_list_snp[variant_type])
+				df_indel = pd.DataFrame.from_dict(mutation_list_indel[variant_type])
+				if df_snp.empty == False and df_indel.empty == False:
+					ax1 = df_snp.plot(kind='hist',bins=33,range=(0,1),
+							alpha=0.5,legend=None,
+							weights=np.ones_like(df_snp[df_snp.columns[0]]) * 1. / len(df_snp), 
+							title=title)
+					df_indel.plot(kind='hist',bins=33,range=(0,1),
+                                                        alpha=0.5,legend=None,
+                                                        weights=np.ones_like(df_indel[df_indel.columns[0]]) * 1. / len(df_indel),
+                                                        ax = ax1)
+					plt.legend(["SNP","INDEL"])
+				elif df_indel.empty == True:
+					df_snp.plot(kind='hist',bins=33,range=(0,1),
+                                                        alpha=0.5,legend=None,
+                                                        weights=np.ones_like(df_snp[df_snp.columns[0]]) * 1. / len(df_snp),
+                                                        title=title)
+					plt.legend(["SNP"])
+				elif df_snp.empty == True:
+					df_indel.plot(kind='hist',bins=33,range=(0,1),
+        	                                        alpha=0.5,legend=None,
+                	                                weights=np.ones_like(df_indel[df_indel.columns[0]]) * 1. / len(df_indel), 
+                        	                        title=title)
+					plt.legend(["INDEL"])
 				plt.ylim(0.0,0.3)
 				plt.ylabel("Percent of mutations")
 				plt.axvline(0.5, color='r', linestyle='dashed', linewidth=1)
@@ -394,7 +471,7 @@ class ALL2():
 			else:
 				sample_signature_count[tri_base_sig]=1
 			total_variant+=1
-		mutation_spectra_file=os.path.join(output_dir,sample+".variant_type"+".mutation_spectra.txt")
+		mutation_spectra_file=os.path.join(output_dir,sample+"."+variant_type+".mutation_spectra.txt")
 		mutation_spectra_file_fh=open(mutation_spectra_file,'w')
 		#print total_variant
 		script_path=os.path.dirname(sys.argv[0])
@@ -415,35 +492,50 @@ class ALL2():
 		six_mutation_plot=os.path.join(output_dir,sample_name+"."+variant_type+".six_mutation_spectrum.png")
 		six_mutations={}
 		six_mutation_count={}
+		cpg = 0
+		cpg_per = 0.0
+		import matplotlib.patches as mpatches
 		for i in open(mutation_spectra_file):
 			line=i.strip().split("\t")
 			ref=line[0][1]
+			ref_plus_one=line[0][2]
 			alt=line[0][4]
 			mutation=ref+">"+alt
 			per=float(line[1])
 			count=int(line[2])
 			if mutation in six_mutations:
-				six_mutations[mutation]+=per
-				six_mutation_count[mutation]+=count
+				if mutation == "C>T" and ref_plus_one == "G":
+					cpg += count
+					cpg_per += per
+				else:
+					six_mutations[mutation]+=per
+					six_mutation_count[mutation]+=count
 			else:
 				six_mutations[mutation]=per
 				six_mutation_count[mutation]=count
 		six_mutation_fh=open(six_mutation_file,'w')
 		labels=["C>A","C>G","C>T","T>A","T>C","T>G"]
+		six_mutation_fh.write("Mutation\tMutation_percent\tMutation_count\tCpG_percent\tCpG_count\n")
 		for i in labels:
-			out=i+"\t"+str(six_mutations[i])+"\t"+str(six_mutation_count[i])+"\n"
+			if i=="C>T":
+				out=i+"\t"+str(six_mutations[i])+"\t"+str(six_mutation_count[i])+"\t"+str(cpg_per)+"\t"+str(cpg)+"\n"
+			else:
+				out=i+"\t"+str(six_mutations[i])+"\t"+str(six_mutation_count[i])+"\t0.0\t0\n"
 			six_mutation_fh.write(out)
 
-		mycolor=["deepskyblue","black","red","silver","lightgreen","lightpink"]
+		mycolor=["deepskyblue","black","red", "silver","lightgreen","lightpink"]
 
 		six_mutation_fh.close()
 		ylim_max=90
-		df=pd.read_table(six_mutation_file,header=None)
-		df=df[df.columns[0:2]]
-		ax=df.plot(kind='bar',grid=0,legend=False,color=[mycolor],figsize=(15,3),ylim=(0.0,ylim_max))
-		a=ax.set_xticklabels(labels,size=10)
+		df=pd.read_csv(six_mutation_file, sep = "\t", header = 0)
+		df["All_mutation_per"]=df["Mutation_percent"]+df["CpG_percent"]
+		ax = df[["Mutation", "All_mutation_per"]].plot(kind='bar', grid=0, legend=False, color = "red", alpha = 0.8, hatch = "////", figsize=(15,3), ylim=(0.0,ylim_max))
+		df[["Mutation", "Mutation_percent"]].plot(kind='bar', grid=0, legend=False, color=[mycolor], figsize=(15,3), ylim=(0.0,ylim_max), ax = ax)
+		a=ax.set_xticklabels(labels, size=10)
 		plt.ylabel("Percent of mutation")
 		plt.title(variant_type+" six Mutation Signature for "+sample_name,y=1.10)
+		cpg_patch = mpatches.Patch(facecolor = 'red', label='CpG', hatch = "////")
+		plt.legend(handles=[cpg_patch], bbox_to_anchor=(0.53,0.60))
 		plt.tight_layout()
 		plt.savefig(six_mutation_plot)
 		plt.close()
