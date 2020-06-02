@@ -200,10 +200,14 @@ class ALL2():
                 all_alt = line[variant_head["ALT"]]
                 # Getting AD and DP field for case
                 case_format = line[variant_head["FORMAT"]].split(":")
+                if line[variant_head["FORMAT"]+1].upper() == "TUMOR":
+                        case=line[variant_head["FORMAT"]+1]
+                elif line[variant_head["FORMAT"]+2].upper() == "TUMOR":
+                        case=line[variant_head["FORMAT"]+2]
                 try:
                     case_genotype = line[variant_head[case]].split(":")
                 except KeyError:
-                    print("Please make sure the name of the case and control in the vcf file match the"
+                    print("Please make sure the name of the case and control in the manifest file match the"
                           " case and control specified in the vcf")
                     exit()
                 ad_index = case_format.index("AD")
