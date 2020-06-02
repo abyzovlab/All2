@@ -221,7 +221,7 @@ class ALL2():
 
                 if depth_index is not "Absent":
                     case_genotype_depth = case_genotype[depth_index]
-                if ad_index is not "Absent"::
+                if ad_index is not "Absent":
                     case_genotype_ad = case_genotype[ad_index]
                 if case_genotype_depth == "0":
                     continue
