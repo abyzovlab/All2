@@ -219,14 +219,10 @@ class ALL2():
                 except ValueError:
                     case_genotype_depth = "Absent"
 
-                if depth_index > -1:
+                if depth_index is not "Absent":
                     case_genotype_depth = case_genotype[depth_index]
-                else:
-                    case_genotype_depth = "Absent"
-                if ad_index > -1:
+                if ad_index is not "Absent"::
                     case_genotype_ad = case_genotype[ad_index]
-                else:
-                    case_genotype_ad = "Absent"
                 if case_genotype_depth == "0":
                     continue
                 # making sure to take care of multiallelic locations
