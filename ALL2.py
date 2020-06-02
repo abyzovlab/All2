@@ -199,8 +199,13 @@ class ALL2():
                 ref = line[variant_head["REF"]]
                 all_alt = line[variant_head["ALT"]]
                 # Getting AD and DP field for case
-                case_format = line[variant_head[case] - 1].split(":")
-                case_genotype = line[variant_head[case]].split(":")
+                case_format = line[variant_head["FORMAT"]].split(":")
+                try:
+                    case_genotype = line[variant_head[case]].split(":")
+                except KeyError:
+                    print("Please make sure the name of the case and control in the vcf file match the"
+                          " case and control specified in the vcf")
+
                 ad_index = case_format.index("AD")
                 depth_index = case_format.index("DP")
                 if depth_index > -1:
