@@ -1,4 +1,3 @@
-#for x in A G T;do for i in  C ;do for j in A C G T;do for k in A C G T;do echo $j$i$k:$x;done ;done ;done;done> list_of_tri_bases.txt; for x in A C G; do for i in T ;do for j in A C G T;do for k in A C G T;do echo $j$i$k:$x;done ;done ;done;done>> list_of_tri_bases.txt
 ACA:A
 ACC:A
 ACG:A
