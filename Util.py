@@ -1,5 +1,6 @@
 import os
 
+
 def FileValidator(file):
     if os.path.exists(file) == False:
         raise Exception("\nERROR:File: " + file + " Doesn't exists")
@@ -31,7 +32,6 @@ def DirectoryValidator(file, read_write="NO"):
     if os.path.isfile(file) == True:
         raise Exception('\nERROR:Directory expected:\n' + file + ':is a file')
     return file
-
 
 
 def ensure_dir(f):
