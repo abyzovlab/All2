@@ -212,11 +212,11 @@ class ALL2():
                     exit()
                 try:
                     ad_index = case_format.index("AD")
-                except KeyError:
+                except ValueError:
                     case_genotype_ad = "Absent"
                 try:
                     depth_index = case_format.index("DP")
-                except KeyError:
+                except ValueError:
                     case_genotype_depth = "Absent"
 
                 if depth_index > -1:
