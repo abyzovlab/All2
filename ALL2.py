@@ -193,6 +193,10 @@ class ALL2():
                     if variant.startswith("#CHROM"):
                         for n, j in enumerate(line):
                             variant_head[j] = n
+                        if line[variant_head["FORMAT"] + 1].upper() == "TUMOR":
+                            case = line[variant_head["FORMAT"] + 1]
+                        elif line[variant_head["FORMAT"] + 2].upper() == "TUMOR":
+                            case = line[variant_head["FORMAT"] + 2]
                     continue
                 chrm = line[variant_head["#CHROM"]]
                 pos = line[variant_head["POS"]]
@@ -200,10 +204,6 @@ class ALL2():
                 all_alt = line[variant_head["ALT"]]
                 # Getting AD and DP field for case
                 case_format = line[variant_head["FORMAT"]].split(":")
-                if line[variant_head["FORMAT"]+1].upper() == "TUMOR":
-                        case=line[variant_head["FORMAT"]+1]
-                elif line[variant_head["FORMAT"]+2].upper() == "TUMOR":
-                        case=line[variant_head["FORMAT"]+2]
                 try:
                     case_genotype = line[variant_head[case]].split(":")
                 except KeyError:
