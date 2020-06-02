@@ -205,7 +205,7 @@ class ALL2():
                 except KeyError:
                     print("Please make sure the name of the case and control in the vcf file match the"
                           " case and control specified in the vcf")
-
+                    exit()
                 ad_index = case_format.index("AD")
                 depth_index = case_format.index("DP")
                 if depth_index > -1:
