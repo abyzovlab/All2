@@ -279,8 +279,12 @@ class ALL2():
             pairs_list = variant_dict[mutation]
             # pairs_list_n is the number of pairs the mutation was called in
             pairs_list_n = len(pairs_list)
-            # cell_fraction_f is the fraction of cells carrying the mutatin
-            cell_fraction_f = 1 / 2 - sqrt(1 / 4 - pairs_list_n / total_number_of_cells_N ** 2)
+            max_pairs_list_n = int(total_number_of_cells_N/2)*(total_number_of_cells_N-(int(total_number_of_cells_N/2)))
+            # cell_fraction_f is the fraction of cells carrying the mutation
+            if pairs_list_n > max_pairs_list_n:
+                cell_fraction_f = 0.0
+            else:
+                cell_fraction_f = 1 / 2 - sqrt(1 / 4 - pairs_list_n / total_number_of_cells_N ** 2)
             # is the number of cells carrying the mutation
             cells_carrying_mutation_Nv = round(cell_fraction_f * total_number_of_cells_N)
             # Creating an 'zero' data frame/matrix and updating mutation specific dataframe/matrix
