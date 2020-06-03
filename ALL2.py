@@ -187,7 +187,8 @@ class ALL2():
             variant_head = {}
             # Reading variants from the vcf file
             for variant in filename_fh:
-                variant = variant.decode("utf-8")
+                if type(variant) is not str:
+                    variant = variant.decode("utf-8")
                 line = variant.strip().split("\t")
                 if variant.startswith("#"):
                     if variant.startswith("#CHROM"):
@@ -214,19 +215,14 @@ class ALL2():
                     ad_index = case_format.index("AD")
                 except ValueError:
                     ad_index = -1
-                try:
-                    depth_index = case_format.index("DP")
-                except ValueError:
-                    depth_index = -1
-                if depth_index > -1:
-                    case_genotype_depth = case_genotype[depth_index]
-                else:
-                    case_genotype_depth = "Absent"
                 if ad_index > -1:
                     case_genotype_ad = case_genotype[ad_index]
+                    case_genotype_depth = sum( map(int, case_genotype_ad.split(",")))
                 else:
                     case_genotype_ad = "Absent"
-                if case_genotype_depth == "0":
+                    case_genotype_depth = "Absent"
+
+                if case_genotype_depth == 0:
                     continue
                 # making sure to take care of multiallelic locations
                 for n, alt in enumerate(all_alt.split(",")):
