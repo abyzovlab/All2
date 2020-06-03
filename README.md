@@ -60,7 +60,7 @@ positional arguments:
 optional arguments:
   -h, --help  show this help message and exit
  ```
-###score: 
+### score: 
 This is the first step and the other two commands will need the output from this step.
 #### Input
 This options takes in a manifest file and output directory as its input. The manifest
