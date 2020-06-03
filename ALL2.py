@@ -210,8 +210,14 @@ class ALL2():
                     print("Please make sure the name of the case and control in the manifest file match the"
                           " case and control specified in the vcf")
                     exit()
-                ad_index = case_format.index("AD")
-                depth_index = case_format.index("DP")
+                try:
+                    ad_index = case_format.index("AD")
+                except ValueError:
+                    ad_index = -1
+                try:
+                    depth_index = case_format.index("DP")
+                except ValueError:
+                    depth_index = -1
                 if depth_index > -1:
                     case_genotype_depth = case_genotype[depth_index]
                 else:
