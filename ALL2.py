@@ -187,8 +187,10 @@ class ALL2():
             variant_head = {}
             # Reading variants from the vcf file
             for variant in filename_fh:
-                if type(variant) is not str:
+                try:
                     variant = variant.decode("utf-8")
+                except AttributeError:
+                    pass
                 line = variant.strip().split("\t")
                 if variant.startswith("#"):
                     if variant.startswith("#CHROM"):
