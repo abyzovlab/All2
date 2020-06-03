@@ -59,9 +59,6 @@ positional arguments:
 
 optional arguments:
   -h, --help  show this help message and exit
-
-example:
-python ALL2.py score -m manifest_file.txt -o output_example/
  ```
 ### score: 
 This is the first step and the other two commands will need the output from this step.
@@ -99,7 +96,8 @@ optional arguments:
   -o OUTPUT_DIR, --output_dir OUTPUT_DIR
                         Path to directory where results will be written
 
-
+example:
+python ALL2.py score -m manifest_file.txt -o output_example/
 ```
  #### Output
  It generates three output files:
@@ -133,4 +131,30 @@ mosaic and germline score cutoff.
 
 #### Input
 #### Usage
+```
+python ALL2.py call -h
+usage: ALL2.py [-h] -g GET_SCORE_DIRECTORY -r REFERENCE -o OUTPUT_DIR
+               [-a AF_CUTOFF] [-ms MOSAIC_SCORE_CUTOFF]
+               [-gs GERMLINE_SCORE_CUTOFF]
+
+apply_score
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -g GET_SCORE_DIRECTORY, --get_score_directory GET_SCORE_DIRECTORY
+                        Path to output directory of the get_score option
+  -r REFERENCE, --reference REFERENCE
+                        Path to reference file
+  -o OUTPUT_DIR, --output_dir OUTPUT_DIR
+                        Path to directory where results will be written
+  -a AF_CUTOFF, --af_cutoff AF_CUTOFF
+                        Allele frequency cut-off for variants (default=0.35)
+  -ms MOSAIC_SCORE_CUTOFF, --mosaic_score_cutoff MOSAIC_SCORE_CUTOFF
+                        Mosaic score cut-off (default=1)
+  -gs GERMLINE_SCORE_CUTOFF, --germline_score_cutoff GERMLINE_SCORE_CUTOFF
+                        Germline score cut-off (default=1)
+
+example:
+python ALL2.py call -r human_g1k_v37_decoy.fasta -o output_example/ -g output_example/
+```
 #### Output
