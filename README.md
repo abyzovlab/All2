@@ -41,7 +41,11 @@ A tool for filtering variants from all2all comparison of multiple clones or sing
    ```
    
  ## How to use All2:
- The All2 script can be run using three commands.
+ The All2 script can be run using three commands:
+ 1. score
+ 1. call
+ 1. matrix
+ ### Usage
  ```
 python ALL2.py -h
 usage:  python ALL2.py <command> [<args>]
@@ -60,7 +64,7 @@ positional arguments:
 optional arguments:
   -h, --help  show this help message and exit
  ```
-### score: 
+### 1. score: 
 This is the first step and the other two commands will need the output from this step.
 #### Input
 This options takes in a manifest file and output directory as its input. The manifest
@@ -125,7 +129,7 @@ python ALL2.py score -m manifest_file.txt -o output_example/
  1. "mutation_matrix.pkl" is an pickle file generated to be used for matrix 
  visualisation in the 'matrix' option. This in no use for the user.
 
-### call:
+### 2. call:
 This is next step after score to call the mosaic mutation based on user defined
 mosaic and germline score cutoff.
 
