@@ -176,32 +176,45 @@ python ALL2.py call -r human_g1k_v37_decoy.fasta -o output_example/ -g output_ex
 This command creates three sets of folder in the output directory:
 1. 'Mutation_counts'  
     Two plots are generated under this:
-    1. 'mutation_type_count.png', which give a mutation count for mosaic, germline and noisy mutation
+    1. 'mutation_type_count.png', which give a mutation count 
+    for mosaic, germline and noisy mutation
+    
         ![mutation_type](output_example/mutation_counts/mutation_type_count.png )    
-    1. 'per_sample_mutation_count.png', which gives a sample level mutation count after filtering at the specified VAF cut-off
+    1. 'per_sample_mutation_count.png', which gives a sample level 
+    mutation count after filtering at the specified VAF cut-off
+    
         ![per_sample_mutation](output_example/mutation_counts/per_sample_mutation_count.png)
 1. 'vaf_plots'  
-    For each sample three variant allele frequency plots are generates:
+    For each sample three variant allele frequency plots are generated:
     1. Mosaic mutation
+    
         ![mosaic vaf]( output_example/vaf_plots/316-BG-cl18.Mosaic.vaf_plot.png)
     1. Germline mutation
+    
         ![germline vaf]( output_example/vaf_plots/316-BG-cl18.Germline.vaf_plot.png)
-    1. Noise mutation      
-        ![noise vaf]( output_example/vaf_plots/316-BG-cl18.noise.vaf_plot.png)
+    1. Noise mutation     
+     
+        ![noise vaf]( output_example/vaf_plots/316-BG-cl18.Noise.vaf_plot.png)
 1. 'mutation_spectrum'  
     For each sample two mutation spectrum plots are generated:
     1. 96 mutation spectrum   
         1. Mosaic
-        ![mosaic_96](output_example/mutation_spectrum/316-BG-cl18.Mosaic.mutation_spectrum.png)
+        
+            ![mosaic_96](output_example/mutation_spectrum/316-BG-cl18.Mosaic.mutation_spectrum.png)
         1. Germline
-        ![germ_96](output_example/mutation_spectrum/316-BG-cl18.Germline.mutation_spectrum.png)
+        
+            ![germ_96](output_example/mutation_spectrum/316-BG-cl18.Germline.mutation_spectrum.png)
         1. Noise
-        ![noise_96](output_example/mutation_spectrum/316-BG-cl18.Noise.mutation_spectrum.png)
+        
+            ![noise_96](output_example/mutation_spectrum/316-BG-cl18.Noise.mutation_spectrum.png)
     1. 6 mutation spectrum plot:
         1. Mosaic
-        ![mosaic_6](output_example/mutation_spectrum/316-BG-cl18.Mosaic.six_mutation_spectrum.png)
+        
+            ![mosaic_6](output_example/mutation_spectrum/316-BG-cl18.Mosaic.six_mutation_spectrum.png)
         1. Germline
-        ![germ_6](output_example/mutation_spectrum/316-BG-cl18.Germline.six_mutation_spectrum.png)
+        
+            ![germ_6](output_example/mutation_spectrum/316-BG-cl18.Germline.six_mutation_spectrum.png)
         1. Noise
-        ![noise_6](output_example/mutation_spectrum/316-BG-cl18.Noise.six_mutation_spectrum.png)
+        
+            ![noise_6](output_example/mutation_spectrum/316-BG-cl18.Noise.six_mutation_spectrum.png)
         
