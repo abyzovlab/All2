@@ -59,6 +59,9 @@ positional arguments:
 
 optional arguments:
   -h, --help  show this help message and exit
+
+example:
+python ALL2.py score -m manifest_file.txt -o output_example/
  ```
 ### score: 
 This is the first step and the other two commands will need the output from this step.
@@ -104,16 +107,16 @@ optional arguments:
  
     Field_name|Explaination
     ---|---
-    Chrom| Chromosome name 
-    Pos| Position of the mutation
-    Ref| Reference allele
-    Alt| Alternate allele
-    Mosaic_score| Mosaic score for the mutation
-    Germline_score| Germline score for the mutation
-    Number_of_samples_with_mutation| Number of samples/pairs where the mutation was called
-    Samples_with_mutation| Name of the samples which have the mutation (comma separated values)
-    VAF_of_samples_with_mutation| Variant allele frequency for the mutation for each sample (comma separated values)
-    Number_of_comparision_per_sample| Number of comparison where this mutation was found in a sample(comma separated value)
+    **Chrom**| Chromosome name 
+    **Pos**| Position of the mutation
+    **Ref**| Reference allele
+    **Alt**| Alternate allele
+    **Mosaic_score**| Mosaic score for the mutation
+    **Germline_score**| Germline score for the mutation
+    **Number_of_samples_with_mutation**| Number of samples/pairs where the mutation was called
+    **Samples_with_mutation**| Name of the samples which have the mutation (comma separated values)
+    **VAF_of_samples_with_mutation**| Variant allele frequency for the mutation for each sample (comma separated values)
+    **Number_of_comparision_per_sample**| Number of comparison where this mutation was found in a sample(comma separated value)
  1. "Explaination_score_scatter.png" which shows the distribution of 
  mutations in terms of mosaic and germline scores. This plot is helpful to 
  determine the mosaic and germline score to use for calling mosaic and germline 
