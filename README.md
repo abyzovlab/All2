@@ -103,9 +103,9 @@ optional arguments:
 ```
  #### Output
  It generates three output files:
- 1. "explaination_score.txt" which has the following information:
+ 1. "explanation_score.txt" which has the following information:
  
-    Field_name|Explaination
+    Field_name|Explanation
     ---|---
     **Chrom**| Chromosome name 
     **Pos**| Position of the mutation
