@@ -217,7 +217,7 @@ class ALL2():
                     ad_index = case_format.index("AD")
                 except ValueError:
                     ad_index = -1
-                if ad_index > -1:
+                if ad_index > -1  and case_genotype[ad_index] != "." :
                     case_genotype_ad = case_genotype[ad_index]
                     case_genotype_depth = sum( map(int, case_genotype_ad.split(",")))
                 else:
