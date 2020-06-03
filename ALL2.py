@@ -452,13 +452,13 @@ class ALL2():
                                   alpha=0.5, legend=None,
                                   weights=np.ones_like(df_indel[df_indel.columns[0]]) * 1. / len(df_indel),
                                   ax=ax1)
-                    plt.legend(["SNP", "INDEL"])
+                    plt.legend(["SNV", "INDEL"])
                 elif df_indel.empty:
                     df_snp.plot(kind='hist', bins=33, range=(0, 1),
                                 alpha=0.5, legend=None,
                                 weights=np.ones_like(df_snp[df_snp.columns[0]]) * 1. / len(df_snp),
                                 title=title)
-                    plt.legend(["SNP"])
+                    plt.legend(["SNV"])
                 elif df_snp.empty:
                     df_indel.plot(kind='hist', bins=33, range=(0, 1),
                                   alpha=0.5, legend=None,
