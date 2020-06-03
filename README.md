@@ -125,7 +125,7 @@ python ALL2.py score -m manifest_file.txt -o output_example/
  mutations in the next 'call' step. The size of the circle denotes the number
  of mutations.
  
-    ![alt text]( output_example/Explaination_score_scatter.png)
+    ![explaination_plot]( output_example/Explaination_score_scatter.png)
  1. "mutation_matrix.pkl" is an pickle file generated to be used for matrix 
  visualisation in the 'matrix' option. This in no use for the user.
 
@@ -134,6 +134,16 @@ This is next step after score to call the mosaic mutation based on user defined
 mosaic and germline score cutoff.
 
 #### Input
+It takes three required parameters:
+1. The output directory from the 'score' command (GET_SCORE_DIRECTORY).
+1. Genome reference that was used to generate the vcf files.
+1. Output directory.
+
+And three optional parameter:
+1. Allele frequency cut-off for mutations (default is 35%)
+1. Mosaic score cut-off (default is 1)
+1. Germline score cut-off (default is 1)
+
 #### Usage
 ```
 python ALL2.py call -h
@@ -162,3 +172,36 @@ example:
 python ALL2.py call -r human_g1k_v37_decoy.fasta -o output_example/ -g output_example/
 ```
 #### Output
+
+This command creates three sets of folder in the output directory:
+1. 'Mutation_counts'  
+    Two plots are generated under this:
+    1. 'mutation_type_count.png', which give a mutation count for mosaic, germline and noisy mutation
+        ![mutation_type](output_example/mutation_counts/mutation_type_count.png )    
+    1. 'per_sample_mutation_count.png', which gives a sample level mutation count after filtering at the specified VAF cut-off
+        ![per_sample_mutation](output_example/mutation_counts/per_sample_mutation_count.png)
+1. 'vaf_plots'  
+    For each sample three variant allele frequency plots are generates:
+    1. Mosaic mutation
+        ![mosaic vaf]( output_example/vaf_plots/316-BG-cl18.Mosaic.vaf_plot.png)
+    1. Germline mutation
+        ![germline vaf]( output_example/vaf_plots/316-BG-cl18.Germline.vaf_plot.png)
+    1. Noise mutation      
+        ![noise vaf]( output_example/vaf_plots/316-BG-cl18.noise.vaf_plot.png)
+1. 'mutation_spectrum'  
+    For each sample two mutation spectrum plots are generated:
+    1. 96 mutation spectrum   
+        1. Mosaic
+        ![mosaic_96](output_example/mutation_spectrum/316-BG-cl18.Mosaic.mutation_spectrum.png)
+        1. Germline
+        ![germ_96](output_example/mutation_spectrum/316-BG-cl18.Germline.mutation_spectrum.png)
+        1. Noise
+        ![noise_96](output_example/mutation_spectrum/316-BG-cl18.Noise.mutation_spectrum.png)
+    1. 6 mutation spectrum plot:
+        1. Mosaic
+        ![mosaic_6](output_example/mutation_spectrum/316-BG-cl18.Mosaic.six_mutation_spectrum.png)
+        1. Germline
+        ![germ_6](output_example/mutation_spectrum/316-BG-cl18.Germline.six_mutation_spectrum.png)
+        1. Noise
+        ![noise_6](output_example/mutation_spectrum/316-BG-cl18.Noise.six_mutation_spectrum.png)
+        
