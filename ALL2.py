@@ -90,12 +90,12 @@ class ALL2():
         ALL2_output = arg.get_score_directory
         output_dir = arg.output_dir
         mutation_list = arg.mutation
-        explaination_file = os.path.join(ALL2_output, "explaination_score.txt")
+        explanation_file = os.path.join(ALL2_output, "explanation_score.txt")
         Util.ensure_dir(output_dir)
 
-        explaination_dict = {}
+        explanation_dict = {}
         head = {}
-        for i in open(explaination_file):
+        for i in open(explanation_file):
             line = i.strip().split("\t")
             if i.startswith("#"):
                 for n, j in enumerate(line):
@@ -112,7 +112,7 @@ class ALL2():
             mutation = "_".join([chrm, pos, ref, alt])
             mutation_related_info = {"mosaic_score": mosaic_score, "germline_score": germline_score,
                                      "sample": samples, "vaf_samples": vaf_samples}
-            explaination_dict[mutation] = mutation_related_info
+            explanation_dict[mutation] = mutation_related_info
         # loading pickle file
         print("Loading pickle file")
         mutation_matrix_file = os.path.join(ALL2_output, "mutation_matrix.pkl")
@@ -131,8 +131,8 @@ class ALL2():
             sns.heatmap(mutation_df, cmap="Blues", cbar=False, ax=ax1, linewidths=.5)
             ax1.set_ylim(len(mutation_df.index), 0)
 
-            list_of_samples = explaination_dict[mutation]["sample"]
-            list_of_samples_vaf = explaination_dict[mutation]["vaf_samples"]
+            list_of_samples = explanation_dict[mutation]["sample"]
+            list_of_samples_vaf = explanation_dict[mutation]["vaf_samples"]
             vaf_bar_list = {}
             vaf_bar_empty = {}
             for i in mutation_df.columns:
@@ -157,8 +157,8 @@ class ALL2():
             ax2.axis("off")
             ax1.set_title(mutation)
             ax2.set_title("VAF", fontsize=10)
-            # mosaic_score = explaination_dict[mutation]["mosaic_score"]
-            # germline_score = explaination_dict[mutation]["germline_score"]
+            # mosaic_score = explanation_dict[mutation]["mosaic_score"]
+            # germline_score = explanation_dict[mutation]["germline_score"]
             plt.tight_layout()
             plt.savefig(os.path.join(output_dir, mutation + ".png"))
             plt.close()
@@ -258,9 +258,9 @@ class ALL2():
                 list_of_samples.append(pairs[0])
         return variant_dict, pairs_vaf_dict, list_of_samples
 
-    def explaination_score(self, variant_dict, pairs_vaf_dict, list_of_samples, output_dir):
+    def explanation_score(self, variant_dict, pairs_vaf_dict, list_of_samples, output_dir):
 
-        output_file = os.path.join(output_dir, "explaination_score.txt")
+        output_file = os.path.join(output_dir, "explanation_score.txt")
         output_file_fh = open(output_file, 'w')
         output_file_fh.write("#Chrom\tPos\tRef\tAlt\tMosaic_score\tGermline_score\tNumber_of_samples_with_mutation"
                              "\tSamples_with_mutation\tVAF_of_samples_with_mutation\tNumber_of_comparision_per_sample"
@@ -311,7 +311,7 @@ class ALL2():
 
             mutation_matrix_dict[mutation] = mutation_df
 
-            # calculating explaination score
+            # calculating explanation score
             ordered_col_sum = mutation_df.sum(axis=1).sort_values(ascending=False)
             ordered_row_sum = mutation_df.sum(axis=0).sort_values(ascending=False)
             explained_call_n_mosaic = ordered_col_sum[:cells_carrying_mutation_Nv].sum()
@@ -337,10 +337,10 @@ class ALL2():
         output_file_fh.close()
 
     def plot_score(self, output_dir):
-        explaination_score = os.path.join(output_dir, "explaination_score.txt")
+        explanation_score = os.path.join(output_dir, "explanation_score.txt")
 
         # Plotting germline versus mosaic score scatter plot
-        df_es = pd.read_table(explaination_score)
+        df_es = pd.read_table(explanation_score)
         x = df_es["Mosaic_score"]
         y = df_es["Germline_score"]
         size_dict = {}
@@ -356,7 +356,79 @@ class ALL2():
             size.append(float(size_dict[score_pair]))
         df_es.plot.scatter("Mosaic_score", "Germline_score", c=size, s=[float(s / 10.0) for s in size], cmap='tab10')
         plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, "Explaination_score_scatter.png"))
+        plt.savefig(os.path.join(output_dir, "Explanation_score_scatter.png"))
+        plt.close()
+
+    def plot_curve(self, x, mosaic_score_cut, germ_score_cut):
+        y_curve = np.multiply(np.sqrt(np.subtract(1,
+                                                  np.divide(np.power(x, 2),
+                                                            np.power(mosaic_score_cut, 2)))),
+                              germ_score_cut)
+        return y_curve
+
+    def plot_score_annotate(self, output_dir, mosaic_score, germline_score):
+        explanation_score = os.path.join(output_dir, "explanation_score.txt")
+        mosaic_score_cut = mosaic_score
+        germ_score_cut = germline_score
+        germ_score_mosaic_cut = 0.2    # Vivek needs to change this to 90 percentile
+        mosaic_score_germ_cut = 0.5    # Vivek needs to change this to 90 percentile
+        # Plotting germline versus mosaic score scatter plot
+        df_es = pd.read_table(explanation_score)
+        x = df_es["Mosaic_score"]
+        y = df_es["Germline_score"]
+        size_dict = {}
+        points_to_plot = 1000
+        for n, i in enumerate(x):
+            score_pair = str(i) + "_" + str(y[n])
+            if score_pair in size_dict:
+                size_dict[score_pair] += 1
+            else:
+                size_dict[score_pair] = 1
+        size = []
+        for n, i in enumerate(x):
+            score_pair = str(i) + "_" + str(y[n])
+            size.append(float(size_dict[score_pair]))
+        ax = df_es.plot.scatter("Mosaic_score", "Germline_score", c=size, s=[float(s / 10.0) for s in size], cmap='tab10')
+        x_curve = np.linspace(0.0, mosaic_score_cut, points_to_plot)
+        y_curve = self.plot_curve(x_curve, mosaic_score_cut, germ_score_cut)
+        line_color = 'black'
+        # Noise
+        ax.fill_between(x_curve, y_curve, color='r', alpha=0.1)
+
+        ## Germline
+        x_germ = np.linspace(0.0, germ_score_mosaic_cut, points_to_plot)
+        y_germ = self.plot_curve(x_germ, mosaic_score_cut, germ_score_cut)
+        y2_germ = np.linspace(1, 1, points_to_plot)
+        ax.fill_between(x_germ, y_germ, y2_germ, color='b', alpha=0.1)
+
+        ## high freq Mosaic
+        x_end_point = self.plot_curve([mosaic_score_germ_cut], germ_score_cut, mosaic_score_cut)[0]  # 0.5
+        x_mosaic_high = np.linspace(germ_score_mosaic_cut, 1, points_to_plot)
+        y_mosaic_high = []
+        for i in x_mosaic_high:
+            if i > x_end_point:
+                y_mosaic_high.append(mosaic_score_germ_cut)
+            else:
+                y_mosaic_high.append(self.plot_curve([i], mosaic_score_cut, germ_score_cut)[0])
+        y2_mosaic_high = np.linspace(1, 1, points_to_plot)
+        ax.fill_between(x_mosaic_high, y_mosaic_high, y2_mosaic_high, color='black', alpha=0.1)
+
+        # Mosaic
+        x_start_point = self.plot_curve([mosaic_score_germ_cut], germ_score_cut, mosaic_score_cut)[0]
+        x_end_point = self.plot_curve([0], germ_score_cut, mosaic_score_cut)[0]
+        x_mosaic = np.linspace(x_start_point, 1, points_to_plot)
+        y_mosaic = self.plot_curve(x_mosaic, mosaic_score_cut, germ_score_cut)
+        # print(y_mosaic)
+        y_mosaic = []
+        for i in x_mosaic:
+            if i < x_end_point:
+                y_mosaic.append(self.plot_curve([i], mosaic_score_cut, germ_score_cut)[0])
+            elif i >= x_end_point:
+                y_mosaic.append(0.0)
+        y2_mosaic = np.linspace(mosaic_score_germ_cut, mosaic_score_germ_cut, points_to_plot)
+        ax.fill_between(x_mosaic, y_mosaic, y2_mosaic, color='green', alpha=0.1)
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_dir, "Explanation_score_scatter_annotated.png"))
         plt.close()
 
     def score(self):
@@ -376,9 +448,9 @@ class ALL2():
         # pairs_vaf_dict={pairs:{mutation:[vaf]}}
         # list_of_samples = list of all samples in the analysis
 
-        # Generating explaination score
-        print("Generating explaination scores")
-        self.explaination_score(variant_dict, pairs_vaf_dict, list_of_samples, output_dir)
+        # Generating explanation score
+        print("Generating explanation scores")
+        self.explanation_score(variant_dict, pairs_vaf_dict, list_of_samples, output_dir)
 
         # Plotting
         print("Plotting")
@@ -651,10 +723,10 @@ class ALL2():
         mosaic_score_cutoff = float(arg.mosaic_score_cutoff)
         germline_score_cutoff = float(arg.germline_score_cutoff)
         Util.ensure_dir(output_dir)
-        explaination_score_file = os.path.join(get_score_dir, "explaination_score.txt")
+        explanation_score_file = os.path.join(get_score_dir, "explanation_score.txt")
         vaf_dict = {}
         head = {}
-        for i in open(explaination_score_file):
+        for i in open(explanation_score_file):
             line = i.strip().split("\t")
             if i.startswith("#"):
                 for n, j in enumerate(line):
@@ -668,12 +740,23 @@ class ALL2():
             mosaic_score = float(line[head["Mosaic_score"]])
 
             # this block annotated the mutation as mosaic, germline or noise
-            if mosaic_score >= mosaic_score_cutoff:
+            if mosaic_score > mosaic_score_cutoff:
+                y_curve = y_curve = self.plot_curve([mosaic_score_cutoff], mosaic_score_cutoff, germline_score_cutoff)[0]
+            else:
+                y_curve = self.plot_curve([mosaic_score], mosaic_score_cutoff, germline_score_cutoff)[0]
+            if germline_score > germline_score_cutoff:
+                x_curve = self.plot_curve([germline_score_cutoff], germline_score_cutoff, mosaic_score_cutoff)[0]
+            else:
+                x_curve = self.plot_curve([germline_score], germline_score_cutoff, mosaic_score_cutoff)[0]
+            if mosaic_score < x_curve and germline_score < y_curve:
+                variant_type = "Noise"
+            elif germline_score > y_curve and mosaic_score > x_curve and mosaic_score >= 0.2:
                 variant_type = "Mosaic"
-            elif germline_score >= germline_score_cutoff:
+            elif germline_score > y_curve and x_curve < mosaic_score < 0.2:
                 variant_type = "Germline"
             else:
-                variant_type = "Noise"
+                print("variant type not detected, check for bugs in variant type definition")
+
             for index, sample in enumerate(list_of_samples):
                 vaf = float(list_of_vafs[index])
                 if sample in vaf_dict:
@@ -687,6 +770,8 @@ class ALL2():
         # structure of var_dict={sample:{variant_type:[(pos,vaf)]}}
 
         # plotting
+        self.plot_score_annotate(output_dir, mosaic_score_cutoff, germline_score_cutoff)
+
         mutation_count_output_dir = os.path.join(output_dir, "mutation_counts")
         Util.ensure_dir(mutation_count_output_dir)
         self.plot_bar(vaf_dict, af_cutoff, mutation_count_output_dir)

@@ -119,13 +119,13 @@ python ALL2.py score -m manifest_file.txt -o output_example/
     **Samples_with_mutation**| Name of the samples which have the mutation (comma separated values)
     **VAF_of_samples_with_mutation**| Variant allele frequency for the mutation for each sample (comma separated values)
     **Number_of_comparision_per_sample**| Number of comparison where this mutation was found in a sample(comma separated value)
- 1. "Explaination_score_scatter.png" which shows the distribution of 
+ 1. "Explanation_score_scatter.png" which shows the distribution of 
  mutations in terms of mosaic and germline scores. This plot is helpful to 
  determine the mosaic and germline score to use for calling mosaic and germline 
  mutations in the next 'call' step. The size of the circle denotes the number
  of mutations.
  
-    ![explaination_plot]( output_example/Explaination_score_scatter.png)
+    ![explanation_plot]( output_example/Explaination_score_scatter.png)
  1. "mutation_matrix.pkl" is an pickle file generated to be used for matrix 
  visualisation in the 'matrix' option. This in no use for the user.
 
@@ -169,11 +169,20 @@ optional arguments:
                         Germline score cut-off (default=1)
 
 example:
-python ALL2.py call -r human_g1k_v37_decoy.fasta -o output_example/ -g output_example/
+python ALL2.py call -r human_g1k_v37_decoy.fasta -o output_example/ -g output_example/ -ms 0.75 -gs 0.75
+
 ```
 #### Output
 
-This command creates three sets of folder in the output directory:
+This command creates a new annotated explanation score plot and three sets of folder in the output directory:
+1. Annotated explanation plot:
+    1. Red area is noise
+    1. Green area is mosaic mutations
+    1. Gray area is high frequency mosaic mutations
+    1. Blue are is germline mutations
+
+![annotated_exp_plot](output_example/Explanation_score_scatter_annotated.png)
+
 1. 'Mutation_counts'  
     Two plots are generated under this:
     1. 'mutation_type_count.png', which give a mutation count 
