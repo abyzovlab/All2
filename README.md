@@ -217,4 +217,38 @@ This command creates three sets of folder in the output directory:
         1. Noise
         
             ![noise_6](output_example/mutation_spectrum/316-BG-cl18.Noise.six_mutation_spectrum.png)
-        
+ 
+ ### 2. matrix:
+ This command lets you look at the mutation matrix to verify a certain mutation
+ 
+ #### Input
+ It takes three parameters:
+ 1. The output directory from the 'score' command (GET_SCORE_DIRECTORY).
+ 1. Output directory.
+ 1. Mutation in the format of chr_pos_alt_ref
+ 
+ #### Usage
+ ```
+ python ALL2.py matrix -h
+usage: ALL2.py [-h] -g GET_SCORE_DIRECTORY -o OUTPUT_DIR -m MUTATION
+
+Plotting mutation matrix
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -g GET_SCORE_DIRECTORY, --get_score_directory GET_SCORE_DIRECTORY
+                        Path to output folder of get_score
+  -o OUTPUT_DIR, --output_dir OUTPUT_DIR
+                        Path to directory where results will be written
+  -m MUTATION, --mutation MUTATION
+                        Mutation format should be chr_pos_alt_ref(eg.
+                        chr1_43504477_T_C)
+
+example:
+python ALL2.py matrix -g output_example/ -o output_example/ -m chr15_80509588_A_C
+```
+ #### Output 
+It creates a  matrix plot along with variant allele frequency
+at each sample for the given mutation.
+
+![mutation_matrix](output_example/chr15_80509588_A_C.png)
