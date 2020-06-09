@@ -211,7 +211,8 @@ class ALL2():
                         for n, j in enumerate(line):
                             variant_head[j] = n
                         if case_in_vcf not in variant_head or control_in_vcf not in variant_head:
-                                print("Please make sure the name of case and control match the names in teh vcf file")
+                                print("Add columns to the manifest file, 'Control_in_vcf' and 'Case_in_vcf' if not already added.")
+                                print("Please make sure the name of case and control match the names in the vcf file.")
                                 exit()
                     continue
                 filter = line[variant_head["FILTER"]]
