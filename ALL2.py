@@ -51,10 +51,18 @@ class ALL2():
     def get_score_argument_parse(self):
         """Parses the command line arguments for get_score"""
         parser = argparse.ArgumentParser(description='get_score')
-        parser.add_argument("-m", "--manifest_file", help="Path to manifest file", required=True,
+        parser.add_argument("-m", "--manifest_file",
+                            help="Path to manifest file",
+                            required=True,
                             type=Util.FileValidator)
-        parser.add_argument("-o", "--output_dir", help="Path to directory where results will be written",
+        parser.add_argument("-o", "--output_dir",
+                            help="Path to directory where results will be written",
                             required=True)
+        parser.add_argument("-a", "--all_mutations",
+                            help="Use this option to use all mutations in the vcf. By default only pass variants are "
+                                 "used",
+                            type=bool, nargs='?',
+                            const=True, default=False)
         return parser
 
     def mutation_matrix_plot_argument_parse(self):
@@ -163,7 +171,7 @@ class ALL2():
             plt.savefig(os.path.join(output_dir, mutation + ".png"))
             plt.close()
 
-    def extract_mutation_information(self, manifest_file, output_dir):
+    def extract_mutation_information(self, manifest_file, output_dir, all_mutations):
         variant_dict = {}
         pairs_vaf_dict = {}
         head = {}
@@ -175,6 +183,12 @@ class ALL2():
                 continue
             case = line[head["Case"]]
             control = line[head["Control"]]
+            try:
+                case_in_vcf = line[head["Case_in_vcf"]]
+                control_in_vcf = line[head["Control_in_vcf"]]
+            except KeyError:
+                case_in_vcf = case
+                control_in_vcf = control
             filename = line[head["Filename"]]
             pair = (case, control)
             if filename.endswith("vcf.gz"):
@@ -196,10 +210,12 @@ class ALL2():
                     if variant.startswith("#CHROM"):
                         for n, j in enumerate(line):
                             variant_head[j] = n
-                        if line[variant_head["FORMAT"] + 1].upper() == "TUMOR":
-                            case = line[variant_head["FORMAT"] + 1]
-                        elif line[variant_head["FORMAT"] + 2].upper() == "TUMOR":
-                            case = line[variant_head["FORMAT"] + 2]
+                        if case_in_vcf not in variant_head or control_in_vcf not in variant_head:
+                                print("Please make sure the name of case and control match the names in teh vcf file")
+                                exit()
+                    continue
+                filter = line[variant_head["FILTER"]]
+                if filter != "PASS" and all_mutations:
                     continue
                 chrm = line[variant_head["#CHROM"]]
                 pos = line[variant_head["POS"]]
@@ -208,7 +224,7 @@ class ALL2():
                 # Getting AD and DP field for case
                 case_format = line[variant_head["FORMAT"]].split(":")
                 try:
-                    case_genotype = line[variant_head[case]].split(":")
+                    case_genotype = line[variant_head[case_in_vcf]].split(":")
                 except KeyError:
                     print("Please make sure the name of the case and control in the manifest file match the"
                           " case and control specified in the vcf")
@@ -275,16 +291,16 @@ class ALL2():
         mutation_matrix_file_fh = open(mutation_matrix_file, 'wb')
 
         for mutation in variant_dict:
-            # pairs_list is a list ofpairs the mutation was called in
+            # pairs_list is a list of pairs the mutation was called in
             pairs_list = variant_dict[mutation]
             # pairs_list_n is the number of pairs the mutation was called in
             pairs_list_n = len(pairs_list)
             max_pairs_list_n = int(total_number_of_cells_N/2)*(total_number_of_cells_N-(int(total_number_of_cells_N/2)))
             # cell_fraction_f is the fraction of cells carrying the mutation
-            if pairs_list_n > max_pairs_list_n:
-                cell_fraction_f = 0.0
-            else:
+            try:
                 cell_fraction_f = 1 / 2 - sqrt(1 / 4 - pairs_list_n / total_number_of_cells_N ** 2)
+            except ValueError:
+                continue
             # is the number of cells carrying the mutation
             cells_carrying_mutation_Nv = round(cell_fraction_f * total_number_of_cells_N)
             # Creating an 'zero' data frame/matrix and updating mutation specific dataframe/matrix
@@ -439,11 +455,12 @@ class ALL2():
         # Assigning values to variable
         manifest_file = arg.manifest_file
         output_dir = arg.output_dir
+        all_mutations = arg.all_mutations
         Util.ensure_dir(output_dir)
 
         # Extracting variant information from the manifest file.
         print("Extracting variant information")
-        variant_dict, pairs_vaf_dict, list_of_samples = self.extract_mutation_information(manifest_file, output_dir)
+        variant_dict, pairs_vaf_dict, list_of_samples = self.extract_mutation_information(manifest_file, output_dir,all_mutations)
         # variant_dict={mutation:[(case,control)]}
         # pairs_vaf_dict={pairs:{mutation:[vaf]}}
         # list_of_samples = list of all samples in the analysis

@@ -70,21 +70,22 @@ This is the first step and the other two commands will need the output from this
 This options takes in a manifest file and output directory as its input. The manifest
 file should have the following format (see manifest_file.txt):
 
-#Control|Case|Filename
----|---|---
-control_1|case_1|path/to/file_1_1.vcf
-control_1|case_2|path/to/file_1_2.vcf
-....|....|....
-control_n|case_m|path/to/file_n_m.vcf
+#Control|Case|Control_in_vcf|Case_in_vcf|Filename
+---|---|---|---|---
+control_1|case_1|control_in_vcf_1|case_in_vcf_1|path/to/file_1_1.vcf
+control_1|case_2|control_in_vcf_1|case_in_vcf_2|path/to/file_1_2.vcf
+....|....|....|....|....
+control_n|case_m|control_in_vcf_n|case_in_vcf_m|path/to/file_n_m.vcf
 ##### Note:
-1. Make sure that the name of control and case in the manifest file match the 
-control and case name in the vcf file. (exception: TUMOR/NORMAL naming is acceptable
-but not recommended)
+1. The columns "Control_in_vcf" and "Case_in_vcf" are optional and can be used when the 
+"Control" and "Case" name don't match the control and case inside the vcf file.
 1. Make sure to vcf files for all the combination of control and case
 specified in the vcf.
 1. It is recommended to filter the vcf (technical artifacts) prior to running All2 to reduce 
 the processing time. If this is not performed, script will automatically 
-spiteout the noise, but might take longer.
+filter the noise, but might take longer.
+1. The script automatically used only "PASS" variants and if you wish to use 
+all variants use the option "-a"
 
 #### Usage
 ```
