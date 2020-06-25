@@ -147,10 +147,12 @@ And three optional parameter:
 
 #### Usage
 ```
-python ALL2.py call -h
+ python ALL2.py call -h
 usage: ALL2.py [-h] -g GET_SCORE_DIRECTORY -r REFERENCE -o OUTPUT_DIR
                [-a AF_CUTOFF] [-ms MOSAIC_SCORE_CUTOFF]
                [-gs GERMLINE_SCORE_CUTOFF]
+               [-msg MOSAIC_SCORE_CUTOFF_FOR_GERMLINE]
+               [-gsm GERMLINE_SCORE_CUTOFF_FOR_MOSAIC]
 
 apply_score
 
@@ -165,12 +167,18 @@ optional arguments:
   -a AF_CUTOFF, --af_cutoff AF_CUTOFF
                         Allele frequency cut-off for variants (default=0.35)
   -ms MOSAIC_SCORE_CUTOFF, --mosaic_score_cutoff MOSAIC_SCORE_CUTOFF
-                        Mosaic score cut-off (default=1)
+                        Mosaic score cut-off (default=0.75)
   -gs GERMLINE_SCORE_CUTOFF, --germline_score_cutoff GERMLINE_SCORE_CUTOFF
-                        Germline score cut-off (default=1)
+                        Germline score cut-off (default=0.75)
+  -msg MOSAIC_SCORE_CUTOFF_FOR_GERMLINE, --mosaic_score_cutoff_for_germline MOSAIC_SCORE_CUTOFF_FOR_GERMLINE
+                        Mosaic score cut-off for germline mutations
+                        (default=0.2)
+  -gsm GERMLINE_SCORE_CUTOFF_FOR_MOSAIC, --germline_score_cutoff_for_mosaic GERMLINE_SCORE_CUTOFF_FOR_MOSAIC
+                        Germline score cut-off for mosaic mutation
+                        (default=0.5)
 
 example:
-python ALL2.py call -r human_g1k_v37_decoy.fasta -o output_example/ -g output_example/ -ms 0.75 -gs 0.75
+python ALL2.py call -r human_g1k_v37_decoy.fasta -o output_example/ -g output_example/ -ms 0.75 -gs 0.75 
 
 ```
 #### Output

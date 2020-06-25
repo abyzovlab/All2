@@ -86,8 +86,10 @@ class ALL2():
                             required=True)
         parser.add_argument("-a", "--af_cutoff", help="Allele frequency cut-off for variants (default=0.35)",
                             default="0.35")
-        parser.add_argument("-ms", "--mosaic_score_cutoff", help="Mosaic score cut-off (default=1)", default="1.0")
-        parser.add_argument("-gs", "--germline_score_cutoff", help="Germline score cut-off (default=1)", default="1.0")
+        parser.add_argument("-ms", "--mosaic_score_cutoff", help="Mosaic score cut-off (default=0.75)", default="0.75")
+        parser.add_argument("-gs", "--germline_score_cutoff", help="Germline score cut-off (default=0.75)", default="0.75")
+        parser.add_argument("-msg", "--mosaic_score_cutoff_for_germline", help="Mosaic score cut-off for germline mutations (default=0.2)", default="0.2")
+        parser.add_argument("-gsm", "--germline_score_cutoff_for_mosaic", help="Germline score cut-off for mosaic mutation (default=0.5)", default="0.5")
         return parser
 
     def matrix(self):
@@ -383,9 +385,9 @@ class ALL2():
                               germ_score_cut)
         return y_curve
 
-    def plot_score_annotate(self, output_dir, mosaic_score, germline_score,mosaic_cutoff_for_germline_mutations,
+    def plot_score_annotate(self, explanation_score_file, output_dir, mosaic_score, germline_score,mosaic_cutoff_for_germline_mutations,
                                  germline_cutoff_for_mosaic_mutations):
-        explanation_score = os.path.join(output_dir, "explanation_score.txt")
+        explanation_score = explanation_score_file
         mosaic_score_cut = mosaic_score
         germ_score_cut = germline_score
         germ_score_mosaic_cut = mosaic_cutoff_for_germline_mutations    # Vivek needs to change this to 90 percentile
@@ -743,14 +745,16 @@ class ALL2():
         germline_score_cutoff = float(arg.germline_score_cutoff)
         percent_cut_off_germline = 0.5
         percent_cut_off_mosaic = 0.95
+
         Util.ensure_dir(output_dir)
         explanation_score_file = os.path.join(get_score_dir, "explanation_score.txt")
         vaf_dict = {}
         head = {}
 
-        # this block determines the mosaic_cutoff_for_germline_mutations and germline_cutoff_for_mosaic_mutations
         df_manifest = pd.read_table(explanation_score_file)
 
+        # this block determines the mosaic_cutoff_for_germline_mutations and germline_cutoff_for_mosaic_mutations
+        '''
         mosaic_scores_for_germline_score_1 = df_manifest[df_manifest["Germline_score"] == 1]["Mosaic_score"].sort_values()
         germline_scores_for_mosaic_score_1 = df_manifest[df_manifest["Mosaic_score"] == 1]["Germline_score"].sort_values()
 
@@ -759,6 +763,11 @@ class ALL2():
 
         mosaic_cutoff_for_germline_mutations = mosaic_scores_for_germline_score_1.iloc[index_of_mosaic_cutoff_for_germline_mutations]
         germline_cutoff_for_mosaic_mutations = germline_scores_for_mosaic_score_1.iloc[index_of_germline_cutoff_for_mosaic_mutations]
+        '''
+        # end of block
+
+        mosaic_cutoff_for_germline_mutations = float(arg.mosaic_score_cutoff_for_germline)
+        germline_cutoff_for_mosaic_mutations = float(arg.germline_score_cutoff_for_mosaic)
 
         for i in open(explanation_score_file):
             line = i.strip().split("\t")
@@ -804,7 +813,7 @@ class ALL2():
         # structure of var_dict={sample:{variant_type:[(pos,vaf)]}}
 
         # plotting
-        self.plot_score_annotate(output_dir, mosaic_score_cutoff, germline_score_cutoff, mosaic_cutoff_for_germline_mutations,
+        self.plot_score_annotate(explanation_score_file, output_dir, mosaic_score_cutoff, germline_score_cutoff, mosaic_cutoff_for_germline_mutations,
                                  germline_cutoff_for_mosaic_mutations)
 
         mutation_count_output_dir = os.path.join(output_dir, "mutation_counts")
