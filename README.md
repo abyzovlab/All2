@@ -140,10 +140,12 @@ It takes three required parameters:
 1. Genome reference that was used to generate the vcf files.
 1. Output directory.
 
-And three optional parameter:
+And five optional parameter:
 1. Allele frequency cut-off for mutations (default is 35%)
-1. Mosaic score cut-off (default is 1)
-1. Germline score cut-off (default is 1)
+1. Mosaic score cut-off (default is 0.75)
+1. Germline score cut-off (default is 0.75)
+1. Mosaic score cut-off for germline (default is 0.20)
+1. Germline score cut-off for mosaic (default is 0.50)
 
 #### Usage
 ```
