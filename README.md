@@ -41,7 +41,7 @@ A tool for filtering variants from all2all comparison of multiple clones or sing
    ```
    
  ## How to use All2:
- The All2 script can be run using three commands:
+ The All2 tool has these three commands:
  1. score
  1. call
  1. matrix
