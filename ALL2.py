@@ -487,7 +487,7 @@ class ALL2():
         for sample in vaf_dict:
             mutation_count_per_sample[sample] = {"Mosaic": 0, "Germline": 0, "Noise": 0}
             for variant_type in ["Mosaic", "Germline", "Noise"]:
-                for pos, vaf in vaf_dict[sample][variant_type]:
+                for pos, vaf, germline_score, mosaic_score in vaf_dict[sample][variant_type]:
                     if pos not in variant_list:
                         mutation_count[variant_type] += 1
                         variant_list.append(pos)
@@ -526,7 +526,7 @@ class ALL2():
             mutation_list_indel = {"Mosaic": [], "Germline": [], "Noise": []}
             for variant_type in ["Mosaic", "Germline", "Noise"]:
                 output_file = os.path.join(output_dir, sample + "." + variant_type + ".vaf_plot.png")
-                for pos, vaf in vaf_dict[sample][variant_type]:
+                for pos, vaf, germline_score, mosaic_score in vaf_dict[sample][variant_type]:
                     chrm, position, ref, alt = pos.split("_")
                     if len(ref) > 1 or len(alt) > 1:
                         mutation_list_indel[variant_type].append(vaf)
@@ -570,7 +570,7 @@ class ALL2():
         """generates the underlying file for spectrum plot"""
         sample_signature_count = {}
         total_variant = 0
-        for pos, vaf in vaf_dict[sample][variant_type]:
+        for pos, vaf, germline_score, mosaic_score in vaf_dict[sample][variant_type]:
             line = pos.strip().split("_")
             chrm = line[0]
             pos = line[1]
@@ -731,6 +731,17 @@ class ALL2():
                 self.mutation_spectrum_plot(mutation_spectra_file, output_dir, sample, variant_type)
                 self.six_mutation_spectrum_plot(mutation_spectra_file, output_dir, sample, variant_type)
 
+    def per_sample_mutation(self, vaf_dict, per_sample_mutation_dir):
+        """Creating per sample mutation file"""
+        for sample in vaf_dict:
+            file_out = os.path.join(per_sample_mutation_dir, sample+".tsv")
+            file_out_fh = open(file_out,'w')
+            file_out_fh.write("#Chr\tPos\tRef\tAlt\tVAF\tMosaic_score\tGermline_score\tVariant_type\n")
+            for variant_type in vaf_dict[sample]:
+                for pos, vaf, germline_score, mosaic_score in vaf_dict[sample][variant_type]:
+                    file_out_fh.write("\t".join(["\t".join(pos.split("_")), str(vaf), str(mosaic_score), str(germline_score), variant_type])+"\n")
+            file_out_fh.close()
+
     def call(self):
         # Extracting passed arguments
         parser = self.apply_score_argument_parse()
@@ -753,7 +764,7 @@ class ALL2():
 
         df_manifest = pd.read_table(explanation_score_file)
 
-        # this block determines the mosaic_cutoff_for_germline_mutations and germline_cutoff_for_mosaic_mutations
+        # Future may be: this block determines the mosaic_cutoff_for_germline_mutations and germline_cutoff_for_mosaic_mutations,
         '''
         mosaic_scores_for_germline_score_1 = df_manifest[df_manifest["Germline_score"] == 1]["Mosaic_score"].sort_values()
         germline_scores_for_mosaic_score_1 = df_manifest[df_manifest["Mosaic_score"] == 1]["Germline_score"].sort_values()
@@ -793,7 +804,9 @@ class ALL2():
                 x_curve = self.plot_curve([germline_score], germline_score_cutoff, mosaic_score_cutoff)[0]
             if mosaic_score < x_curve and germline_score < y_curve:
                 variant_type = "Noise"
-            elif germline_score > y_curve and mosaic_score > x_curve and mosaic_score >= mosaic_cutoff_for_germline_mutations:
+            elif germline_score > y_curve and mosaic_score > x_curve and mosaic_score >= mosaic_cutoff_for_germline_mutations and germline_score > germline_cutoff_for_mosaic_mutations:
+                variant_type = "Mosaic_high_freq"
+            elif germline_score > y_curve and mosaic_score > x_curve and mosaic_score >= mosaic_cutoff_for_germline_mutations and germline_score <= germline_cutoff_for_mosaic_mutations:
                 variant_type = "Mosaic"
             elif germline_score > y_curve and x_curve < mosaic_score < mosaic_cutoff_for_germline_mutations:
                 variant_type = "Germline"
@@ -804,13 +817,20 @@ class ALL2():
                 vaf = float(list_of_vafs[index])
                 if sample in vaf_dict:
                     if variant_type in vaf_dict[sample]:
-                        vaf_dict[sample][variant_type].append((pos, vaf))
+                        vaf_dict[sample][variant_type].append((pos, vaf, germline_score, mosaic_score))
                     else:
-                        vaf_dict[sample][variant_type] = [(pos, vaf)]
+                        vaf_dict[sample][variant_type] = [(pos, vaf, germline_score, mosaic_score)]
                 else:
                     vaf_dict[sample] = {}
 
-        # structure of var_dict={sample:{variant_type:[(pos,vaf)]}}
+        # structure of var_dict={sample:{variant_type:[(pos,vaf)]}}  ; pos = chr pos ref alt
+
+        # per sample mutation file
+        per_sample_mutation_dir = os.path.join(output_dir, "per_sample_mutation")
+        Util.ensure_dir(per_sample_mutation_dir)
+        self.per_sample_mutation(vaf_dict,per_sample_mutation_dir)
+
+
 
         # plotting
         self.plot_score_annotate(explanation_score_file, output_dir, mosaic_score_cutoff, germline_score_cutoff, mosaic_cutoff_for_germline_mutations,
