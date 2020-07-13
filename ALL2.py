@@ -537,15 +537,16 @@ class ALL2():
                 df_snp = pd.DataFrame.from_dict(mutation_list_snp[variant_type])
                 df_indel = pd.DataFrame.from_dict(mutation_list_indel[variant_type])
                 if df_snp.empty == False and df_indel.empty == False:
+                    ax1 = df_snp.plot(kind='hist', bins=33, range=(0, 1),
+                                alpha = 1, legend=None,
+                                weights=np.ones_like(df_snp[df_snp.columns[0]]) * 1. / len(df_snp),
+                                title = title)
                     ax1 = df_indel.plot(kind='hist', bins=33, range=(0, 1),
                                   alpha=0.5, legend=None,
                                   weights=np.ones_like(df_indel[df_indel.columns[0]]) * 1. / len(df_indel),
-                                  title = title)
-                    df_snp.plot(kind='hist', bins=33, range=(0, 1),
-                                      alpha = 0.5, legend=None,
-                                      weights = np.ones_like(df_snp[df_snp.columns[0]]) * 1. / len(df_snp),
-                                      ax = ax1)
-                    plt.legend(["INDEL", "SNV"])
+                                  ax = ax1)
+
+                    plt.legend(["SNV", "INDEL"])
                 elif df_indel.empty:
                     df_snp.plot(kind='hist', bins=33, range=(0, 1),
                                 alpha=0.5, legend=None,
