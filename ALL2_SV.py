@@ -262,7 +262,7 @@ class ALL2():
                         sv_type = j.split("=")[1]
                 if sv_type == "BND":
                     continue
-                chr_start_end = chrm + "_" + start_pos + "" + end_pos
+                chr_start_end = chrm + "_" + start_pos + "_" + end_pos
                 ref = line[variant_head["REF"]]
                 alt = line[variant_head["ALT"]]
                 mutation = "\t".join([chrm, start_pos, ref, alt])
