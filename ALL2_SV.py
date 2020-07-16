@@ -173,11 +173,11 @@ class ALL2():
             plt.savefig(os.path.join(output_dir, mutation + ".png"))
             plt.close()
 
-    def reciprocal_overlap(self, SV_mutations_dict, chr_start_end):
+    def reciprocal_overlap(self, SV_dict, chr_start_end):
         """ 50 % reciprocal overlap"""
 
-        for sv in SV_mutations_dict:
-            dict_chr_start_end = SV_mutations_dict[sv].split("_")
+        for sv in SV_dict:
+            dict_chr_start_end = SV_dict[sv].split("_")
             dict_chr = dict_chr_start_end[0]
             dict_start = dict_chr_start_end[1]
             dict_end = dict_chr_start_end[2]
@@ -203,6 +203,7 @@ class ALL2():
     def extract_mutation_information(self, manifest_file, output_dir, all_mutations):
         variant_dict = {}
         SV_mutations_dict = {}
+        SV_dict = {}
         pairs_vaf_dict = {}
         head = {}
         for i in open(manifest_file):
@@ -262,14 +263,16 @@ class ALL2():
                 ref = line[variant_head["REF"]]
                 alt = line[variant_head["ALT"]]
                 mutation = "\t".join([chrm, start_pos, ref, alt])
-                sv = self.reciprocal_overlap(SV_mutations_dict, chr_start_end)
+                sv = self.reciprocal_overlap(SV_dict, chr_start_end)
                 if sv == False:
                     sv_count += 1
                     sv = sv_count
+                    SV_dict[sv]=[chr_start_end]
                     SV_mutations_dict[sv]={pair:[mutation]}
                 else:
+                    SV_dict[sv].append(chr_start_end)
                     if pair in SV_mutations_dict[sv]:
-                        SV_mutations_dict[sv].append(mutation)
+                        SV_mutations_dict[sv][pair].append(mutation)
                     else:
                         SV_mutations_dict[sv] = {pair:[mutation]}
 
