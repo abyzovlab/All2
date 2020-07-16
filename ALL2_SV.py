@@ -281,7 +281,10 @@ class ALL2():
                     print("Please make sure the name of the case and control in the manifest file match the"
                           " case and control specified in the vcf")
                     exit()
-                variant_dict[sv].append(pair)
+                if sv not in variant_dict:
+                    variant_dict[sv]=[pair]
+                else:
+                    variant_dict[sv].append(pair)
                 vaf = 0
                 if pair in pairs_vaf_dict.keys():
                     if sv in pairs_vaf_dict[pair].keys():
