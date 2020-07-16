@@ -182,16 +182,15 @@ class ALL2():
                 print(mutation)
                 dict_chr_start_end = mutation.split("_")
                 dict_chr = dict_chr_start_end[0]
-                dict_start = dict_chr_start_end[1]
-                dict_end = dict_chr_start_end[2]
+                dict_start = int(dict_chr_start_end[1])
+                dict_end = int(dict_chr_start_end[2])
 
-                dict_sv_len = int(dict_end) - int(dict_start)
+                dict_sv_len = dict_end - dict_start
 
                 chr = chr_start_end.split("_")[0]
-                start = chr_start_end.split("_")[1]
-                end = chr_start_end.split("_")[2]
-                sv_len = int(end) - int(start)
-
+                start = int(chr_start_end.split("_")[1])
+                end = int(chr_start_end.split("_")[2])
+                sv_len = end - start
                 if chr != dict_chr:
                     continue
 
