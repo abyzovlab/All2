@@ -198,8 +198,6 @@ class ALL2():
             if end - dict_start >= sv_len/2 or end - dict_start >= dict_sv_len/2:
                 return sv
 
-
-        return sv
         return False
 
     def extract_mutation_information(self, manifest_file, output_dir, all_mutations):
