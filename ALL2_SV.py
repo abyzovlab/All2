@@ -177,9 +177,7 @@ class ALL2():
         """ 50 % reciprocal overlap"""
 
         for sv in SV_dict:
-            print(sv)
             for mutation in SV_dict[sv]:
-                print(mutation)
                 dict_chr_start_end = mutation.split("\t")
                 dict_chr = dict_chr_start_end[0]
                 dict_start = int(dict_chr_start_end[1])
