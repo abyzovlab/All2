@@ -188,7 +188,7 @@ class ALL2():
                 dict_sv_len = dict_end - dict_start
 
                 chr = chr_start_end.split("\t")[0]
-                start = int(chr_start_end.split("\t"")[1])
+                start = int(chr_start_end.split("\t")[1])
                 end = int(chr_start_end.split("\t")[2])
                 sv_len = end - start
                 if chr != dict_chr:
