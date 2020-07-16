@@ -263,7 +263,7 @@ class ALL2():
                 chr_start_end = chrm + "_" + start_pos + "" + end_pos
                 ref = line[variant_head["REF"]]
                 alt = line[variant_head["ALT"]]
-                mutation = "\t".join([chrm, pos, ref, alt])
+                #mutation = "\t".join([chrm, pos, ref, alt])
                 sv = reciprocal_overlap(SV_mutations_dict, chr_start_end)
                 if sv == False:
                     sv_count += 1
@@ -284,31 +284,14 @@ class ALL2():
                           " case and control specified in the vcf")
                     exit()
                 variant_dict[sv].append(pair)
-                # making sure to take care of multiallelic locations
-                for n, alt in enumerate(all_alt.split(",")):
-                    mutation = "\t".join([chrm, pos, ref, alt])
-                    # storing variants
-                    if mutation in variant_dict:
-                        variant_dict[mutation].append(pair)
+                vaf = 0
+                if pair in pairs_vaf_dict.keys():
+                    if sv in pairs_vaf_dict[pair].keys():
+                        pairs_vaf_dict[pair][sv].append(vaf)
                     else:
-                        variant_dict[mutation] = [pair]
-                    # storing VAFs
-                    if case_genotype_ad != "Absent":
-                        if case_genotype_depth != "Absent":
-                            alt_supporting_read = case_genotype_ad.split(",")[n + 1]
-                            vaf = str(float(float(alt_supporting_read) / float(case_genotype_depth)))
-                        else:
-                            vaf = "Absent"
-                    else:
-                        vaf = "Absent"
-                    # creating a dictionary of dictionary ({pairs:{mutation:[vaf]}})
-                    if pair in pairs_vaf_dict.keys():
-                        if mutation in pairs_vaf_dict[pair].keys():
-                            pairs_vaf_dict[pair][mutation].append(vaf)
-                        else:
-                            pairs_vaf_dict[pair][mutation] = [vaf]
-                    else:
-                        pairs_vaf_dict[pair] = {mutation: [vaf]}
+                        pairs_vaf_dict[pair][sv] = [vaf]
+                else:
+                    pairs_vaf_dict[pair] = {sv: [vaf]}
         filename_fh.close()
         list_of_samples = []
         for pairs in pairs_vaf_dict:
