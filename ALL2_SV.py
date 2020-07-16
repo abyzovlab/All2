@@ -266,7 +266,7 @@ class ALL2():
                 sv = self.reciprocal_overlap(SV_dict, chr_start_end)
                 if sv == False:
                     sv_count += 1
-                    sv = sv_count
+                    sv = str(sv_count)
                     SV_dict[sv]=[chr_start_end]
                     SV_mutations_dict[sv]={pair:[mutation]}
                 else:
