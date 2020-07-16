@@ -180,16 +180,16 @@ class ALL2():
             print(sv)
             for mutation in SV_dict[sv]:
                 print(mutation)
-                dict_chr_start_end = mutation.split("_")
+                dict_chr_start_end = mutation.split("\t")
                 dict_chr = dict_chr_start_end[0]
                 dict_start = int(dict_chr_start_end[1])
                 dict_end = int(dict_chr_start_end[2])
 
                 dict_sv_len = dict_end - dict_start
 
-                chr = chr_start_end.split("_")[0]
-                start = int(chr_start_end.split("_")[1])
-                end = int(chr_start_end.split("_")[2])
+                chr = chr_start_end.split("\t")[0]
+                start = int(chr_start_end.split("\t"")[1])
+                end = int(chr_start_end.split("\t")[2])
                 sv_len = end - start
                 if chr != dict_chr:
                     continue
@@ -261,7 +261,7 @@ class ALL2():
                         sv_type = j.split("=")[1]
                 if sv_type == "BND":
                     continue
-                chr_start_end = chrm + "_" + start_pos + "_" + end_pos
+                chr_start_end = chrm + "\t" + start_pos + "\t" + end_pos
                 ref = line[variant_head["REF"]]
                 alt = line[variant_head["ALT"]]
                 mutation = "\t".join([chrm, start_pos, ref, alt])
