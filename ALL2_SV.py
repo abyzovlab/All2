@@ -261,7 +261,7 @@ class ALL2():
                 chr_start_end = chrm + "_" + start_pos + "" + end_pos
                 ref = line[variant_head["REF"]]
                 alt = line[variant_head["ALT"]]
-                #mutation = "\t".join([chrm, pos, ref, alt])
+                mutation = "\t".join([chrm, start_pos, ref, alt])
                 sv = self.reciprocal_overlap(SV_mutations_dict, chr_start_end)
                 if sv == False:
                     sv_count += 1
