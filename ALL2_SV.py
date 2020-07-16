@@ -177,26 +177,27 @@ class ALL2():
         """ 50 % reciprocal overlap"""
 
         for sv in SV_dict:
-            dict_chr_start_end = SV_dict[sv].split("_")
-            dict_chr = dict_chr_start_end[0]
-            dict_start = dict_chr_start_end[1]
-            dict_end = dict_chr_start_end[2]
+            for mutation in SV_dict[sv]:
+                dict_chr_start_end = mutation.split("_")
+                dict_chr = dict_chr_start_end[0]
+                dict_start = dict_chr_start_end[1]
+                dict_end = dict_chr_start_end[2]
 
-            dict_sv_len = int(dict_end) - int(dict_start)
+                dict_sv_len = int(dict_end) - int(dict_start)
 
-            chr = chr_start_end.split("_")[0]
-            start = chr_start_end.split("_")[1]
-            end = chr_start_end.split("_")[2]
-            sv_len = int(end) - int(start)
+                chr = chr_start_end.split("_")[0]
+                start = chr_start_end.split("_")[1]
+                end = chr_start_end.split("_")[2]
+                sv_len = int(end) - int(start)
 
-            if chr != dict_chr:
-                continue
+                if chr != dict_chr:
+                    continue
 
-            if dict_end - start >= sv_len/2 or dict_end - start >= dict_sv_len/2:
-                return sv
+                if dict_end - start >= sv_len/2 or dict_end - start >= dict_sv_len/2:
+                    return sv
 
-            if end - dict_start >= sv_len/2 or end - dict_start >= dict_sv_len/2:
-                return sv
+                if end - dict_start >= sv_len/2 or end - dict_start >= dict_sv_len/2:
+                    return sv
 
         return False
 
