@@ -521,7 +521,7 @@ class ALL2():
         # Per sample variant counts
         df = pd.DataFrame.from_dict(mutation_count_per_sample, orient='index')
         output_file_per_sample = os.path.join(output_dir, "per_sample_mutation_count.png")
-        title = "Mutations with allele frequency cutoff above " + str(af_cutoff)
+        title = "Structural variants "
         ax = df.plot(kind='bar', legend=True, grid=False)
         plt.title(title)
         plt.ylabel("Number of mutations")
