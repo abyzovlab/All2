@@ -259,7 +259,7 @@ class ALL2():
                     SV_dict[sv] = [chr_start_end_svtype]
                     SV_mutations_dict[sv] = {pair:[mutation]}
                 else:
-                    if sv_count == 187:
+                    if sv_count == "187":
                         print("in true", chr_start_end_svtype)
                     SV_dict[sv].append(chr_start_end_svtype)
                     if pair in SV_mutations_dict[sv]:
