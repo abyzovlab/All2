@@ -191,7 +191,6 @@ class ALL2():
                 dict_svtype = dict_chr_start_end_svtype[3]
                 dict_sv_len = dict_end - dict_start
                 if chr != dict_chr or svtype != dict_svtype:
-                    print(chr_start_end_svtype, mutation + " break")
                     break
 
                 if start >= dict_start and start < dict_end:
@@ -199,7 +198,6 @@ class ALL2():
                 elif dict_start >= start and dict_start < end:
                     overlap_start = dict_start
                 else:
-                    print(chr_start_end_svtype, mutation +" continue, overlap start")
                     continue
                 if end < dict_end:
                     overlap_end = end
@@ -209,9 +207,7 @@ class ALL2():
                 overlap = overlap_end - overlap_start
 
                 if overlap >= sv_len/2 and overlap >= dict_sv_len/2:
-                    print(chr_start_end_svtype, mutation, sv + " return")
                     return sv
-        print("False")
         return False
 
     def extract_mutation_information(self, manifest_file, output_dir, all_mutations):
@@ -289,7 +285,7 @@ class ALL2():
                         SV_mutations_dict[sv][pair].append(mutation)
                     else:
                         SV_mutations_dict[sv] = {pair:[mutation]}
-                #print(sv, chr_start_end_svtype)
+                print(sv, chr_start_end_svtype)
                 # Getting AD and DP field for case
                 case_format = line[variant_head["FORMAT"]].split(":")
                 try:
