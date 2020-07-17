@@ -175,6 +175,11 @@ class ALL2():
 
     def reciprocal_overlap(self, SV_dict, chr_start_end_svtype):
         """ 50 % reciprocal overlap"""
+        chr = chr_start_end_svtype.split("\t")[0]
+        start = int(chr_start_end_svtype.split("\t")[1])
+        end = int(chr_start_end_svtype.split("\t")[2])
+        svtype = chr_start_end_svtype.split("\t")[3]
+        sv_len = end - start
 
         for sv in SV_dict:
             for mutation in SV_dict[sv]:
@@ -183,23 +188,21 @@ class ALL2():
                 dict_start = int(dict_chr_start_end_svtype[1])
                 dict_end = int(dict_chr_start_end_svtype[2])
                 dict_svtype = dict_chr_start_end_svtype[3]
-
                 dict_sv_len = dict_end - dict_start
-
-                chr = chr_start_end_svtype.split("\t")[0]
-                start = int(chr_start_end_svtype.split("\t")[1])
-                end = int(chr_start_end_svtype.split("\t")[2])
-                svtype = chr_start_end_svtype.split("\t")[3]
-                sv_len = end - start
+                print(chr_start_end_svtype, mutation)
                 if chr != dict_chr or svtype != dict_svtype:
-                    continue
+                    print("break")
+                    break
                 if dict_sv_len < sv_len/2 or sv_len < dict_sv_len/2:
+                    print("continue")
                     continue
 
                 if dict_end > start and dict_start < start and dict_end - start >= sv_len/2 and dict_end - start >= dict_sv_len/2:
+                    print("return", sv)
                     return sv
 
                 if end > dict_start and start < dict_start and end - dict_start >= sv_len/2 and end - dict_start >= dict_sv_len/2:
+                    print("return", sv)
                     return sv
 
         return False
@@ -271,8 +274,8 @@ class ALL2():
                 if sv == False:
                     sv_count += 1
                     sv = str(sv_count)
-                    SV_dict[sv]=[chr_start_end_svtype]
-                    SV_mutations_dict[sv]={pair:[mutation]}
+                    SV_dict[sv] = [chr_start_end_svtype]
+                    SV_mutations_dict[sv] = {pair:[mutation]}
                 else:
                     SV_dict[sv].append(chr_start_end_svtype)
                     if pair in SV_mutations_dict[sv]:
