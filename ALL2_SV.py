@@ -263,11 +263,11 @@ class ALL2():
                         sv_type = j.split("=")[1]
                 if sv_type == "BND":
                     continue
-                chr_start_end = chrm + "\t" + start_pos + "\t" + end_pos
+                chr_start_end_svtype = chrm + "\t" + start_pos + "\t" + end_pos + "\t" + sv_type
                 ref = line[variant_head["REF"]]
                 alt = line[variant_head["ALT"]]
                 mutation = "\t".join([chrm, start_pos, ref, alt])
-                sv = self.reciprocal_overlap(SV_dict, chr_start_end)
+                sv = self.reciprocal_overlap(SV_dict, chr_start_end_svtype)
                 if sv == False:
                     sv_count += 1
                     sv = str(sv_count)
