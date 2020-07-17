@@ -138,8 +138,8 @@ class ALL2():
                 print("Mutation " + mutation + " not found")
                 continue
             mutation_df = mutation_matrix_dict[mutation]
-            fig, (ax1, ax2) = plt.subplots(1, 2, gridspec_kw={'width_ratios': [8, 1]})
-            sns.heatmap(mutation_df, cmap="Blues", cbar=False, ax=ax1, linewidths=.5)
+            #fig, (ax1, ax2) = plt.subplots(1, 2, gridspec_kw={'width_ratios': [8, 1]})
+            ax1=sns.heatmap(mutation_df, cmap="Blues", cbar=False, linewidths=.5)
             ax1.set_ylim(len(mutation_df.index), 0)
             '''
             list_of_samples = explanation_dict[mutation]["sample"]
