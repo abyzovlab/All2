@@ -195,9 +195,21 @@ class ALL2():
                     print("break")
                     break
 
-                dict_sv_list=range(dict_start,dict_end+1)
-                intersection = set.intersection(set(sv_list),set(dict_sv_list))
-                if len(intersection) >= sv_len/2 and len(intersection) >= dict_sv_len/2:
+                if start >= dict_start and start < dict_end:
+                    overlap_start = start
+                elif dict_start >= start and dict_start < end:
+                    overlap_start = dict_start
+                else:
+                    print("continue, overlap start")
+                    continue
+                if end < dict_end:
+                    overlap_end = end
+                else:
+                    overlap_end = dict_end
+
+                overlap = overlap_end - overlap_start
+
+                if overlap >= sv_len/2 and overlap >= dict_sv_len/2:
                     print("return", sv)
                     return sv
         print("False")
