@@ -193,6 +193,7 @@ class ALL2():
         SV_dict = {}
         pairs_vaf_dict = {}
         head = {}
+        sv_count = 0
         for i in open(manifest_file):
             line = i.strip().split("\t")
             if i.startswith("#"):
@@ -218,7 +219,6 @@ class ALL2():
                 exit()
             variant_head = {}
             # Reading variants from the vcf file
-            sv_count = 0
             for variant in filename_fh:
                 try:
                     variant = variant.decode("utf-8")
@@ -253,14 +253,10 @@ class ALL2():
                 sv = self.reciprocal_overlap(SV_dict, chr_start_end_svtype)
                 if sv == False:
                     sv_count += 1
-                    if sv_count == 187:
-                        print("in false", chr_start_end_svtype)
                     sv = str(sv_count)
                     SV_dict[sv] = [chr_start_end_svtype]
                     SV_mutations_dict[sv] = {pair:[mutation]}
                 else:
-                    if sv_count == "187":
-                        print("in true", chr_start_end_svtype)
                     SV_dict[sv].append(chr_start_end_svtype)
                     if pair in SV_mutations_dict[sv]:
                         SV_mutations_dict[sv][pair].append(mutation)
