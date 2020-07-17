@@ -576,7 +576,7 @@ class ALL2():
                 for n, j in enumerate(line):
                     head[j] = n
                 continue
-            pos = line[head["#SV"])
+            pos = line[head["#SV"]]
             list_of_samples = line[head["Samples_with_mutation"]].split(",")
             list_of_vafs = line[head["VAF_of_samples_with_mutation"]].split(",")
             variant_type = ""
