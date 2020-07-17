@@ -503,7 +503,7 @@ class ALL2():
                     if pos not in variant_list:
                         mutation_count[variant_type] += 1
                         variant_list.append(pos)
-                         mutation_count_per_sample[sample][variant_type] += 1
+                        mutation_count_per_sample[sample][variant_type] += 1
         df = pd.DataFrame.from_dict(mutation_count, orient='index')
         title = "Number of unique mutations across all samples"
         ax = df.plot(kind='bar', legend=False, title=title, alpha=0.60, grid=False)
