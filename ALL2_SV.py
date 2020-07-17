@@ -119,7 +119,7 @@ class ALL2():
             germline_score = line[head["Germline_score"]]
             samples = line[head["Samples_with_mutation"]].split(",")
             vaf_samples = line[head["VAF_of_samples_with_mutation"]].split(",")
-            mutation = "_".join([chrm, pos, ref, alt])
+            #mutation = "_".join([chrm, pos, ref, alt])
             mutation = line[head["#SV"]]
             mutation_related_info = {"mosaic_score": mosaic_score, "germline_score": germline_score,
                                      "sample": samples, "vaf_samples": vaf_samples}
