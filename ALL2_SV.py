@@ -21,10 +21,10 @@ class ALL2():
         parser = argparse.ArgumentParser(description='All to all comparision',
                                          usage=''' python ALL2.py <command> [<args>]
         Three commands to use:
-                score --> Generates mosaic and germline scores.
-                call --> Based on score cut-off generates sample level files/plots for mosaic,
-                        germline mutations and plots variant allele frequency, mutation spectrum
-                matrix --> Plot the mutation matrix
+                score_sv --> Generates mosaic and germline scores.
+                call_sv --> Based on score cut-off generates sample level files/plots for mosaic and 
+                        germline mutations 
+                matrix_sv --> Plot the mutation matrix
                 ''')
         parser.add_argument('command', help='Please specify score/call/matrix as a command')
         args = parser.parse_args(sys.argv[1:2])
@@ -92,7 +92,7 @@ class ALL2():
         parser.add_argument("-gsm", "--germline_score_cutoff_for_mosaic", help="Germline score cut-off for mosaic mutation (default=0.5)", default="0.5")
         return parser
 
-    def matrix(self):
+    def matrix_sv(self):
         parser = self.mutation_matrix_plot_argument_parse()
         arg = parser.parse_args(sys.argv[2:])
         import seaborn as sns
@@ -387,6 +387,8 @@ class ALL2():
             score_pair = str(i) + "_" + str(y[n])
             size.append(float(size_dict[score_pair]))
         df_es.plot.scatter("Mosaic_score", "Germline_score", c=size, s=[float(s / 10.0) for s in size], cmap='tab10')
+        plt.ylim(0,1)
+        plt.xlim(0,1)
         plt.tight_layout()
         plt.savefig(os.path.join(output_dir, "Explanation_score_scatter.png"))
         plt.close()
@@ -464,7 +466,7 @@ class ALL2():
         plt.savefig(os.path.join(output_dir, "Explanation_score_scatter_annotated.png"))
         plt.close
 
-    def score(self):
+    def score_sv(self):
         # Extracting passed arguments
         parser = self.get_score_argument_parse()
         arg = parser.parse_args(sys.argv[2:])
@@ -532,219 +534,6 @@ class ALL2():
         plt.savefig(output_file_per_sample)
         plt.close()
 
-    def plot_vaf(self, vaf_dict, af_cutoff, output_dir):
-        """ plotting vaf plots """
-        for sample in vaf_dict:
-            mutation_list_snp = {"Mosaic": [], "Germline": [], "Noise": []}
-            mutation_list_indel = {"Mosaic": [], "Germline": [], "Noise": []}
-            for variant_type in ["Mosaic", "Germline", "Noise"]:
-                output_file = os.path.join(output_dir, sample + "." + variant_type + ".vaf_plot.png")
-                for pos, vaf, germline_score, mosaic_score in vaf_dict[sample][variant_type]:
-                    chrm, position, ref, alt = pos.split("_")
-                    if len(ref) > 1 or len(alt) > 1:
-                        mutation_list_indel[variant_type].append(vaf)
-                    else:
-                        mutation_list_snp[variant_type].append(vaf)
-
-                title = variant_type + " VAF distribution for " + sample
-                df_snp = pd.DataFrame.from_dict(mutation_list_snp[variant_type])
-                df_indel = pd.DataFrame.from_dict(mutation_list_indel[variant_type])
-                if df_snp.empty == False and df_indel.empty == False:
-                    ax1 = df_snp.plot(kind='hist', bins=33, range=(0, 1),
-                                alpha = 1, legend=None,
-                                weights=np.ones_like(df_snp[df_snp.columns[0]]) * 1. / len(df_snp),
-                                title = title)
-                    ax1 = df_indel.plot(kind='hist', bins=33, range=(0, 1),
-                                  alpha=0.5, legend=None,
-                                  weights=np.ones_like(df_indel[df_indel.columns[0]]) * 1. / len(df_indel),
-                                  ax = ax1)
-
-                    plt.legend(["SNV", "INDEL"])
-                elif df_indel.empty:
-                    df_snp.plot(kind='hist', bins=33, range=(0, 1),
-                                alpha=0.5, legend=None,
-                                weights=np.ones_like(df_snp[df_snp.columns[0]]) * 1. / len(df_snp),
-                                title=title)
-                    plt.legend(["SNV"])
-                elif df_snp.empty:
-                    df_indel.plot(kind='hist', bins=33, range=(0, 1),
-                                  alpha=0.5, legend=None,
-                                  weights=np.ones_like(df_indel[df_indel.columns[0]]) * 1. / len(df_indel),
-                                  title=title)
-                    plt.legend(["INDEL"])
-                plt.ylim(0.0, 0.3)
-                plt.ylabel("Percent of mutations")
-                plt.axvline(0.5, color='r', linestyle='dashed', linewidth=1)
-                plt.axvline(af_cutoff, color='g', linestyle='dashed', linewidth=1)
-                plt.tight_layout()
-                plt.savefig(output_file)
-                plt.close()
-
-    def create_spectra_file(self, vaf_dict, sample, variant_type, af_cutoff, output_dir, reference):
-        """generates the underlying file for spectrum plot"""
-        sample_signature_count = {}
-        total_variant = 0
-        for pos, vaf, germline_score, mosaic_score in vaf_dict[sample][variant_type]:
-            line = pos.strip().split("_")
-            chrm = line[0]
-            pos = line[1]
-            ref = line[2].upper()
-            alt = line[3].upper()
-            if len(ref) > 1 or len(alt) > 1 or vaf < af_cutoff:
-                continue
-            ref_extract_pos = chrm + ":" + str(int(pos) - 1) + "-" + str(int(pos) + 1)
-            cmd = " ".join(["samtools faidx", reference,
-                            ref_extract_pos,
-                            "|grep -v \"^>\""])
-
-            tri_base = self.cmdline(cmd).strip().upper()
-            if ref == "G" or ref == "A":
-                ref = self.comp(ref)
-                alt = self.comp(alt)
-                tri_base = self.comp(tri_base)
-            tri_base_sig = tri_base + ":" + alt
-            if tri_base_sig in sample_signature_count:
-                sample_signature_count[tri_base_sig] += 1
-            else:
-                sample_signature_count[tri_base_sig] = 1
-            total_variant += 1
-        mutation_spectra_file = os.path.join(output_dir, sample + "." + variant_type + ".mutation_spectra.txt")
-        mutation_spectra_file_fh = open(mutation_spectra_file, 'w')
-        # print total_variant
-        script_path = os.path.dirname(sys.argv[0])
-        list_of_mut = os.path.join(script_path, "list_of_tri_bases.txt")
-        for i in open(list_of_mut):
-            if i.startswith("#"):
-                continue
-            mut_sig = i.strip()
-            if mut_sig in sample_signature_count:
-                spectra_line = mut_sig + "\t" + str(
-                    float(float(sample_signature_count[mut_sig]) / float(total_variant)) * 100) + "\t" + str(
-                    sample_signature_count[mut_sig]) + "\n"
-            else:
-                spectra_line = mut_sig + "\t0.0\t0\n"
-            mutation_spectra_file_fh.write(spectra_line)
-        return mutation_spectra_file
-
-    def six_mutation_spectrum_plot(self, mutation_spectra_file, output_dir, sample_name, variant_type):
-        six_mutation_file = os.path.join(output_dir, sample_name + "." + variant_type + ".six_mutation_spectrum.txt")
-        six_mutation_plot = os.path.join(output_dir, sample_name + "." + variant_type + ".six_mutation_spectrum.png")
-        six_mutations = {}
-        six_mutation_count = {}
-        cpg = 0
-        cpg_per = 0.0
-        import matplotlib.patches as mpatches
-        for i in open(mutation_spectra_file):
-            line = i.strip().split("\t")
-            ref = line[0][1]
-            ref_plus_one = line[0][2]
-            alt = line[0][4]
-            mutation = ref + ">" + alt
-            per = float(line[1])
-            count = int(line[2])
-            if mutation in six_mutations:
-                if mutation == "C>T" and ref_plus_one == "G":
-                    cpg += count
-                    cpg_per += per
-                else:
-                    six_mutations[mutation] += per
-                    six_mutation_count[mutation] += count
-            else:
-                six_mutations[mutation] = per
-                six_mutation_count[mutation] = count
-        six_mutation_fh = open(six_mutation_file, 'w')
-        labels = ["C>A", "C>G", "C>T", "T>A", "T>C", "T>G"]
-        six_mutation_fh.write("Mutation\tMutation_percent\tMutation_count\tCpG_percent\tCpG_count\n")
-        for i in labels:
-            if i == "C>T":
-                out = i + "\t" + str(six_mutations[i]) + "\t" + str(six_mutation_count[i]) + "\t" + str(
-                    cpg_per) + "\t" + str(cpg) + "\n"
-            else:
-                out = i + "\t" + str(six_mutations[i]) + "\t" + str(six_mutation_count[i]) + "\t0.0\t0\n"
-            six_mutation_fh.write(out)
-
-        mycolor = ["deepskyblue", "black", "red", "silver", "lightgreen", "lightpink"]
-
-        six_mutation_fh.close()
-        ylim_max = 90
-        df = pd.read_csv(six_mutation_file, sep="\t", header=0)
-        df["All_mutation_per"] = df["Mutation_percent"] + df["CpG_percent"]
-        ax = df[["Mutation", "All_mutation_per"]].plot(kind='bar', grid=0, legend=False, color="red", alpha=0.8,
-                                                       hatch="////", figsize=(15, 3), ylim=(0.0, ylim_max))
-        df[["Mutation", "Mutation_percent"]].plot(kind='bar', grid=0, legend=False, color=[mycolor], figsize=(15, 3),
-                                                  ylim=(0.0, ylim_max), ax=ax)
-        a = ax.set_xticklabels(labels, size=10)
-        plt.ylabel("Percent of mutation")
-        plt.title(variant_type + " six Mutation Signature for " + sample_name, y=1.10)
-        cpg_patch = mpatches.Patch(facecolor='red', label='CpG', hatch="////")
-        plt.legend(handles=[cpg_patch], bbox_to_anchor=(0.53, 0.60))
-        plt.tight_layout()
-        plt.savefig(six_mutation_plot)
-        plt.close()
-
-    def mutation_spectrum_plot(self, mutation_spectra_file, output_dir, sample_name, variant_type):
-        """Creates the spectrum plot"""
-        global color_sig
-        ylim_max = 15.0
-        df = pd.read_table(mutation_spectra_file, header=None)
-        df = df[df.columns[0:2]]
-        label = []
-        top_label = []
-        mycolor = []
-        for i in df.iloc[:, 0]:
-            mut_sig = i.strip().split("\t")[0]
-            ref = mut_sig[1].upper()
-            alt = mut_sig[4].upper()
-            label.append(mut_sig.split(":")[0])
-            top_label.append(ref + ">" + alt)
-            if ref == "C" and alt == "A":
-                color_sig = "deepskyblue"
-            if ref == "C" and alt == "G":
-                color_sig = "black"
-            if ref == "C" and alt == "T":
-                color_sig = "red"
-            if ref == "T" and alt == "A":
-                color_sig = "silver"
-            if ref == "T" and alt == "C":
-                color_sig = "lightgreen"
-            if ref == "T" and alt == "G":
-                color_sig = "lightpink"
-
-            mycolor.append(color_sig)
-
-        ax = df.plot(kind='bar', grid=0, legend=False, color=[mycolor], ylim=(0.0, ylim_max), figsize=(15, 3))
-        plt.plot([0, 13.5], [ylim_max, ylim_max], 'k-', lw=35, color='deepskyblue')
-        plt.title(variant_type + " mutational Signature for " + sample_name, y=1.10)
-        plt.ylabel("Percent of mutation")
-        plt.text(6, ylim_max + 1, "C>A", fontsize=12)
-        plt.plot([17, 29.5], [ylim_max, ylim_max], 'k-', lw=35, color='black')
-        plt.text(22, ylim_max + 1, "C>G", fontsize=12)
-        plt.plot([33, 46], [ylim_max, ylim_max], 'k-', lw=35, color='red')
-        plt.text(38, ylim_max + 1, "C>T", fontsize=12)
-
-        plt.plot([49.5, 62], [ylim_max, ylim_max], 'k-', lw=35, color='silver')
-        plt.text(54, ylim_max + 1, "T>A", fontsize=12)
-        plt.plot([65.5, 78], [ylim_max, ylim_max], 'k-', lw=35, color='lightgreen')
-        plt.text(70, ylim_max + 1, "T>C", fontsize=12)
-        plt.plot([81.5, 95], [ylim_max, ylim_max], 'k-', lw=35, color='lightpink')
-        plt.text(85, ylim_max + 1, "T>G", fontsize=12)
-        output_plot = os.path.join(output_dir, sample_name + "." + variant_type + ".mutation_spectrum.png")
-        a = ax.set_xticklabels(label, size=10)
-        plt.tight_layout()
-        plt.savefig(output_plot)
-        plt.close()
-
-    def plot_mutation_spectrum(self, vaf_dict, af_cutoff, output_dir, reference):
-        """ Plots mutation spectrum """
-        for sample in vaf_dict:
-            mutation_list = {"Mosaic": [], "Germline": [], "Noise": []}
-            for variant_type in ["Mosaic", "Germline", "Noise"]:
-                output_file = os.path.join(output_dir, sample + "." + variant_type + ".vaf_plot.png")
-                mutation_spectra_file = self.create_spectra_file(vaf_dict, sample, variant_type, af_cutoff,
-                                                                 output_dir, reference)
-                self.mutation_spectrum_plot(mutation_spectra_file, output_dir, sample, variant_type)
-                self.six_mutation_spectrum_plot(mutation_spectra_file, output_dir, sample, variant_type)
-
     def per_sample_mutation(self, vaf_dict, per_sample_mutation_dir):
         """Creating per sample mutation file"""
         for sample in vaf_dict:
@@ -756,7 +545,7 @@ class ALL2():
                     file_out_fh.write("\t".join(["\t".join(pos.split("_")), str(vaf), str(mosaic_score), str(germline_score), variant_type])+"\n")
             file_out_fh.close()
 
-    def call(self):
+    def call_sv(self):
         # Extracting passed arguments
         parser = self.apply_score_argument_parse()
         arg = parser.parse_args(sys.argv[2:])
@@ -776,20 +565,7 @@ class ALL2():
         vaf_dict = {}
         head = {}
 
-        df_manifest = pd.read_table(explanation_score_file)
-
-        # Future may be: this block determines the mosaic_cutoff_for_germline_mutations and germline_cutoff_for_mosaic_mutations,
-        '''
-        mosaic_scores_for_germline_score_1 = df_manifest[df_manifest["Germline_score"] == 1]["Mosaic_score"].sort_values()
-        germline_scores_for_mosaic_score_1 = df_manifest[df_manifest["Mosaic_score"] == 1]["Germline_score"].sort_values()
-
-        index_of_mosaic_cutoff_for_germline_mutations = round(mosaic_scores_for_germline_score_1.size * percent_cut_off_germline)
-        index_of_germline_cutoff_for_mosaic_mutations = round(germline_scores_for_mosaic_score_1.size * percent_cut_off_mosaic)
-
-        mosaic_cutoff_for_germline_mutations = mosaic_scores_for_germline_score_1.iloc[index_of_mosaic_cutoff_for_germline_mutations]
-        germline_cutoff_for_mosaic_mutations = germline_scores_for_mosaic_score_1.iloc[index_of_germline_cutoff_for_mosaic_mutations]
-        '''
-        # end of block
+        #df_manifest = pd.read_table(explanation_score_file)
 
         mosaic_cutoff_for_germline_mutations = float(arg.mosaic_score_cutoff_for_germline)
         germline_cutoff_for_mosaic_mutations = float(arg.germline_score_cutoff_for_mosaic)
@@ -800,7 +576,7 @@ class ALL2():
                 for n, j in enumerate(line):
                     head[j] = n
                 continue
-            pos = "_".join(line[head["#Chrom"]:head["Mosaic_score"]])
+            pos = line[head["#SV"])
             list_of_samples = line[head["Samples_with_mutation"]].split(",")
             list_of_vafs = line[head["VAF_of_samples_with_mutation"]].split(",")
             variant_type = ""
@@ -844,8 +620,6 @@ class ALL2():
         Util.ensure_dir(per_sample_mutation_dir)
         self.per_sample_mutation(vaf_dict,per_sample_mutation_dir)
 
-
-
         # plotting
         self.plot_score_annotate(explanation_score_file, output_dir, mosaic_score_cutoff, germline_score_cutoff, mosaic_cutoff_for_germline_mutations,
                                  germline_cutoff_for_mosaic_mutations)
@@ -853,14 +627,6 @@ class ALL2():
         mutation_count_output_dir = os.path.join(output_dir, "mutation_counts")
         Util.ensure_dir(mutation_count_output_dir)
         self.plot_bar(vaf_dict, af_cutoff, mutation_count_output_dir)
-
-        vaf_output_dir = os.path.join(output_dir, "vaf_plots")
-        Util.ensure_dir(vaf_output_dir)
-        self.plot_vaf(vaf_dict, af_cutoff, vaf_output_dir)
-
-        mutation_spectrum_output_dir = os.path.join(output_dir, "mutation_spectrum")
-        Util.ensure_dir(mutation_spectrum_output_dir)
-        self.plot_mutation_spectrum(vaf_dict, af_cutoff, mutation_spectrum_output_dir, reference)
 
 
 if __name__ == '__main__':
