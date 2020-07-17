@@ -180,6 +180,7 @@ class ALL2():
         end = int(chr_start_end_svtype.split("\t")[2])
         svtype = chr_start_end_svtype.split("\t")[3]
         sv_len = end - start
+        sv_list = range(start,end+1)
 
         for sv in SV_dict:
             for mutation in SV_dict[sv]:
@@ -193,15 +194,10 @@ class ALL2():
                 if chr != dict_chr or svtype != dict_svtype:
                     print("break")
                     break
-                if dict_sv_len < sv_len/2 or sv_len < dict_sv_len/2:
-                    print("continue")
-                    continue
 
-                if dict_end > start and dict_start < start and dict_end - start >= sv_len/2 and dict_end - start >= dict_sv_len/2:
-                    print("return", sv)
-                    return sv
-
-                if end > dict_start and start < dict_start and end - dict_start >= sv_len/2 and end - dict_start >= dict_sv_len/2:
+                dict_sv_list=range(dict_start,dict_end+1)
+                intersection = set.intersection(set(sv_list),set(dict_sv_list))
+                if len(intersection) >= sv_len/2 and len(intersection) >= dict_sv_len/2
                     print("return", sv)
                     return sv
         print("False")
