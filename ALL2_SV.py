@@ -253,10 +253,14 @@ class ALL2():
                 sv = self.reciprocal_overlap(SV_dict, chr_start_end_svtype)
                 if sv == False:
                     sv_count += 1
+                    if sv_count == 187:
+                        print("in false", chr_start_end_svtype)
                     sv = str(sv_count)
                     SV_dict[sv] = [chr_start_end_svtype]
                     SV_mutations_dict[sv] = {pair:[mutation]}
                 else:
+                    if sv_count == 187:
+                        print("in true", chr_start_end_svtype)
                     SV_dict[sv].append(chr_start_end_svtype)
                     if pair in SV_mutations_dict[sv]:
                         SV_mutations_dict[sv][pair].append(mutation)
