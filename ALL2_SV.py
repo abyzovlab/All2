@@ -111,15 +111,16 @@ class ALL2():
                 for n, j in enumerate(line):
                     head[j] = n
                 continue
-            chrm = line[head["#Chrom"]]
-            pos = line[head["Pos"]]
-            ref = line[head["Ref"]]
-            alt = line[head["Alt"]]
+            #chrm = line[head["#Chrom"]]
+            #pos = line[head["Pos"]]
+            #ref = line[head["Ref"]]
+            #alt = line[head["Alt"]]
             mosaic_score = line[head["Mosaic_score"]]
             germline_score = line[head["Germline_score"]]
             samples = line[head["Samples_with_mutation"]].split(",")
             vaf_samples = line[head["VAF_of_samples_with_mutation"]].split(",")
             mutation = "_".join([chrm, pos, ref, alt])
+            mutation = line[head["#SV"]]
             mutation_related_info = {"mosaic_score": mosaic_score, "germline_score": germline_score,
                                      "sample": samples, "vaf_samples": vaf_samples}
             explanation_dict[mutation] = mutation_related_info
