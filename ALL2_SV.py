@@ -141,7 +141,7 @@ class ALL2():
             fig, (ax1, ax2) = plt.subplots(1, 2, gridspec_kw={'width_ratios': [8, 1]})
             sns.heatmap(mutation_df, cmap="Blues", cbar=False, ax=ax1, linewidths=.5)
             ax1.set_ylim(len(mutation_df.index), 0)
-
+            '''
             list_of_samples = explanation_dict[mutation]["sample"]
             list_of_samples_vaf = explanation_dict[mutation]["vaf_samples"]
             vaf_bar_list = {}
@@ -166,8 +166,9 @@ class ALL2():
                               edgecolor='blue', alpha=0.5)
             ax2.invert_yaxis()
             ax2.axis("off")
+            '''
             ax1.set_title(mutation)
-            ax2.set_title("VAF", fontsize=10)
+            #ax2.set_title("VAF", fontsize=10)
             # mosaic_score = explanation_dict[mutation]["mosaic_score"]
             # germline_score = explanation_dict[mutation]["germline_score"]
             plt.tight_layout()
