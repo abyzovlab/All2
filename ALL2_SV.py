@@ -209,7 +209,7 @@ class ALL2():
                 overlap = overlap_end - overlap_start
 
                 if overlap >= sv_len/2 and overlap >= dict_sv_len/2:
-                    print(chr_start_end_svtype, mutation + " return"
+                    print(chr_start_end_svtype, mutation + " return")
                     return sv
         print("False")
         return False
