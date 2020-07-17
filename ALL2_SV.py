@@ -173,23 +173,27 @@ class ALL2():
             plt.savefig(os.path.join(output_dir, mutation + ".png"))
             plt.close()
 
-    def reciprocal_overlap(self, SV_dict, chr_start_end):
+    def reciprocal_overlap(self, SV_dict, chr_start_end_svtype):
         """ 50 % reciprocal overlap"""
 
         for sv in SV_dict:
             for mutation in SV_dict[sv]:
-                dict_chr_start_end = mutation.split("\t")
-                dict_chr = dict_chr_start_end[0]
-                dict_start = int(dict_chr_start_end[1])
-                dict_end = int(dict_chr_start_end[2])
+                dict_chr_start_end_svtype = mutation.split("\t")
+                dict_chr = dict_chr_start_end_svtype[0]
+                dict_start = int(dict_chr_start_end_svtype[1])
+                dict_end = int(dict_chr_start_end_svtype[2])
+                dict_svtype = dict_chr_start_end_svtype[3]
 
                 dict_sv_len = dict_end - dict_start
 
-                chr = chr_start_end.split("\t")[0]
-                start = int(chr_start_end.split("\t")[1])
-                end = int(chr_start_end.split("\t")[2])
+                chr = chr_start_end_svtype.split("\t")[0]
+                start = int(chr_start_end_svtype.split("\t")[1])
+                end = int(chr_start_end_svtype.split("\t")[2])
+                svtype = chr_start_end_svtype.split("\t")[3]
                 sv_len = end - start
-                if chr != dict_chr:
+                if chr != dict_chr or svtype != dict_svtype:
+                    continue
+                if dict_sv_len < sv_len/2 or sv_len < dict_sv_len/2:
                     continue
 
                 if dict_end > start and dict_start < start and dict_end - start >= sv_len/2 and dict_end - start >= dict_sv_len/2:
