@@ -192,10 +192,10 @@ class ALL2():
                 if chr != dict_chr:
                     continue
 
-                if dict_end - start >= sv_len/2 or dict_end - start >= dict_sv_len/2:
+                if dict_end - start >= sv_len/2 and dict_end - start >= dict_sv_len/2:
                     return sv
 
-                if end - dict_start >= sv_len/2 or end - dict_start >= dict_sv_len/2:
+                if end - dict_start >= sv_len/2 and end - dict_start >= dict_sv_len/2:
                     return sv
 
         return False
@@ -275,7 +275,7 @@ class ALL2():
                         SV_mutations_dict[sv][pair].append(mutation)
                     else:
                         SV_mutations_dict[sv] = {pair:[mutation]}
-
+                print(sv, chr_start_end)
                 # Getting AD and DP field for case
                 case_format = line[variant_head["FORMAT"]].split(":")
                 try:
@@ -320,6 +320,7 @@ class ALL2():
         mutation_matrix_file_fh = open(mutation_matrix_file, 'wb')
 
         for mutation in variant_dict:
+            print(mutation)
             # pairs_list is a list of pairs the mutation was called in
             pairs_list = variant_dict[mutation]
             # pairs_list_n is the number of pairs the mutation was called in
