@@ -190,7 +190,6 @@ class ALL2():
                 dict_end = int(dict_chr_start_end_svtype[2])
                 dict_svtype = dict_chr_start_end_svtype[3]
                 dict_sv_len = dict_end - dict_start
-                print(chr_start_end_svtype, mutation)
                 if chr != dict_chr or svtype != dict_svtype:
                     print("break")
                     break
@@ -210,6 +209,7 @@ class ALL2():
                 overlap = overlap_end - overlap_start
 
                 if overlap >= sv_len/2 and overlap >= dict_sv_len/2:
+                    print(chr_start_end_svtype, mutation)
                     print("return", sv)
                     return sv
         print("False")
