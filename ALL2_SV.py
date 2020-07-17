@@ -197,7 +197,7 @@ class ALL2():
 
                 dict_sv_list=range(dict_start,dict_end+1)
                 intersection = set.intersection(set(sv_list),set(dict_sv_list))
-                if len(intersection) >= sv_len/2 and len(intersection) >= dict_sv_len/2
+                if len(intersection) >= sv_len/2 and len(intersection) >= dict_sv_len/2:
                     print("return", sv)
                     return sv
         print("False")
