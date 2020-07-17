@@ -192,10 +192,10 @@ class ALL2():
                 if chr != dict_chr:
                     continue
 
-                if dict_end - start >= sv_len/2 and dict_end - start >= dict_sv_len/2:
+                if dict_end > start and dict_start < start and dict_end - start >= sv_len/2 and dict_end - start >= dict_sv_len/2:
                     return sv
 
-                if end - dict_start >= sv_len/2 and end - dict_start >= dict_sv_len/2:
+                if end > dict_start and start < dict_start and end - dict_start >= sv_len/2 and end - dict_start >= dict_sv_len/2:
                     return sv
 
         return False
