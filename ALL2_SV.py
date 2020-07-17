@@ -204,7 +204,7 @@ class ALL2():
                 if end > dict_start and start < dict_start and end - dict_start >= sv_len/2 and end - dict_start >= dict_sv_len/2:
                     print("return", sv)
                     return sv
-
+        print("False")
         return False
 
     def extract_mutation_information(self, manifest_file, output_dir, all_mutations):
@@ -327,7 +327,6 @@ class ALL2():
         mutation_matrix_file_fh = open(mutation_matrix_file, 'wb')
 
         for mutation in variant_dict:
-            print(mutation)
             # pairs_list is a list of pairs the mutation was called in
             pairs_list = variant_dict[mutation]
             # pairs_list_n is the number of pairs the mutation was called in
