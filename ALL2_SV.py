@@ -262,7 +262,6 @@ class ALL2():
                         SV_mutations_dict[sv][pair].append(mutation)
                     else:
                         SV_mutations_dict[sv] = {pair:[mutation]}
-                print(sv, chr_start_end_svtype, pair)
                 # Getting AD and DP field for case
                 case_format = line[variant_head["FORMAT"]].split(":")
                 try:
@@ -387,8 +386,6 @@ class ALL2():
             score_pair = str(i) + "_" + str(y[n])
             size.append(float(size_dict[score_pair]))
         df_es.plot.scatter("Mosaic_score", "Germline_score", c=size, s=[float(s / 10.0) for s in size], cmap='tab10')
-        plt.ylim(0,1)
-        plt.xlim(0,1)
         plt.tight_layout()
         plt.savefig(os.path.join(output_dir, "Explanation_score_scatter.png"))
         plt.close()
@@ -493,7 +490,7 @@ class ALL2():
         # plotting(output_dir,list_of_samples,af_cutoff)
         self.plot_score(output_dir)
 
-    def plot_bar(self, vaf_dict, af_cutoff, output_dir):
+    def plot_bar_sv(self, vaf_dict, output_dir,):
         """ plotting bar plot """
         output_file = os.path.join(output_dir, "mutation_type_count.png")
         mutation_count = {"Mosaic": 0, "Germline": 0, "Noise": 0}
@@ -506,8 +503,7 @@ class ALL2():
                     if pos not in variant_list:
                         mutation_count[variant_type] += 1
                         variant_list.append(pos)
-                    if vaf >= af_cutoff:
-                        mutation_count_per_sample[sample][variant_type] += 1
+                         mutation_count_per_sample[sample][variant_type] += 1
         df = pd.DataFrame.from_dict(mutation_count, orient='index')
         title = "Number of unique mutations across all samples"
         ax = df.plot(kind='bar', legend=False, title=title, alpha=0.60, grid=False)
@@ -534,7 +530,7 @@ class ALL2():
         plt.savefig(output_file_per_sample)
         plt.close()
 
-    def per_sample_mutation(self, vaf_dict, per_sample_mutation_dir):
+    def per_sample_mutation_sv(self, vaf_dict, per_sample_mutation_dir):
         """Creating per sample mutation file"""
         for sample in vaf_dict:
             file_out = os.path.join(per_sample_mutation_dir, sample+".tsv")
@@ -618,7 +614,7 @@ class ALL2():
         # per sample mutation file
         per_sample_mutation_dir = os.path.join(output_dir, "per_sample_mutation")
         Util.ensure_dir(per_sample_mutation_dir)
-        self.per_sample_mutation(vaf_dict,per_sample_mutation_dir)
+        self.per_sample_mutation_sv(vaf_dict,per_sample_mutation_dir)
 
         # plotting
         self.plot_score_annotate(explanation_score_file, output_dir, mosaic_score_cutoff, germline_score_cutoff, mosaic_cutoff_for_germline_mutations,
@@ -626,7 +622,7 @@ class ALL2():
 
         mutation_count_output_dir = os.path.join(output_dir, "mutation_counts")
         Util.ensure_dir(mutation_count_output_dir)
-        self.plot_bar(vaf_dict, af_cutoff, mutation_count_output_dir)
+        self.plot_bar_sv(vaf_dict, mutation_count_output_dir)
 
 
 if __name__ == '__main__':
