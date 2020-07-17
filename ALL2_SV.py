@@ -141,32 +141,7 @@ class ALL2():
             #fig, (ax1, ax2) = plt.subplots(1, 2, gridspec_kw={'width_ratios': [8, 1]})
             ax1=sns.heatmap(mutation_df, cmap="Blues", cbar=False, linewidths=.5)
             ax1.set_ylim(len(mutation_df.index), 0)
-            '''
-            list_of_samples = explanation_dict[mutation]["sample"]
-            list_of_samples_vaf = explanation_dict[mutation]["vaf_samples"]
-            vaf_bar_list = {}
-            vaf_bar_empty = {}
-            for i in mutation_df.columns:
-                if i in list_of_samples:
-                    vaf = float(list_of_samples_vaf[list_of_samples.index(i)])
-                else:
-                    vaf = 0.0
-                vaf_bar_list[i] = vaf
-                vaf_bar_empty[i] = 1.0
-            vaf_df = pd.DataFrame.from_dict(vaf_bar_list, orient='index')
-            vaf_df_empty = pd.DataFrame.from_dict(vaf_bar_empty, orient='index')
-            vaf_df.plot(kind='barh', xlim=(0.0, 1), legend=False, sharex=True, ax=ax2, color='g', alpha=0.5,
-                        title="VAF", width=0.7)
-            for n, i in enumerate(ax2.patches):
-                # get_x pulls left or right; get_height pushes up or down
-                ax2.text(0.3, n + 0.30, str(round(i.get_width() * 100)) + "%", fontsize=6, color='blue')
 
-            vaf_df_empty.plot(kind='barh', xlim=(0.0, 1), legend=False,
-                              sharex=True, ax=ax2, color='none', width=0.7,
-                              edgecolor='blue', alpha=0.5)
-            ax2.invert_yaxis()
-            ax2.axis("off")
-            '''
             ax1.set_title(mutation)
             #ax2.set_title("VAF", fontsize=10)
             # mosaic_score = explanation_dict[mutation]["mosaic_score"]
@@ -287,7 +262,7 @@ class ALL2():
                         SV_mutations_dict[sv][pair].append(mutation)
                     else:
                         SV_mutations_dict[sv] = {pair:[mutation]}
-                print(sv, chr_start_end_svtype)
+                print(sv, chr_start_end_svtype, pair)
                 # Getting AD and DP field for case
                 case_format = line[variant_head["FORMAT"]].split(":")
                 try:
