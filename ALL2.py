@@ -1090,7 +1090,7 @@ class ALL2():
             if pairs[0] not in list_of_samples:
                 list_of_samples.append(pairs[0])
         print(variant_dict["33"])
-        print(SV_mutations_dict["33s"])
+        print(SV_mutations_dict["33"])
         return variant_dict, SV_mutations_dict, list_of_samples
 
     def explanation_score_sv(self, variant_dict, SV_mutation_dict, list_of_samples, output_dir):
