@@ -1064,6 +1064,8 @@ class ALL2():
                             SV_mutations_dict[sv][pair].append(mutation)
                         else:
                             SV_mutations_dict[sv][pair]=[mutation]
+                    else:
+                        SV_mutations_dict[sv] = {pair: [mutation]}
 
                 # Getting AD and DP field for case
                 case_format = line[variant_head["FORMAT"]].split(":")
