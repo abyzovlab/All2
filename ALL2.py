@@ -1176,7 +1176,7 @@ class ALL2():
         pickle.dump(mutation_matrix_dict, mutation_matrix_file_fh)
         mutation_matrix_file_fh.close()
         output_file_fh.close()
-        output_sv_mapping_file_fh.close())
+        output_sv_mapping_file_fh.close()
 
     def score_sv(self):
         # Extracting passed arguments
