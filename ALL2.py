@@ -926,8 +926,6 @@ class ALL2():
         parser = argparse.ArgumentParser(description='apply_score')
         parser.add_argument("-g", "--get_score_directory", help="Path to output directory of the get_score option",
                             required=True, type=Util.DirectoryValidator)
-        parser.add_argument("-r", "--reference", help="Path to reference file", required=True,
-                            type=Util.FileValidator)
         parser.add_argument("-o", "--output_dir", help="Path to directory where results will be written",
                             required=True)
         parser.add_argument("-ms", "--mosaic_score_cutoff", help="Mosaic score cut-off (default=0.75)", default="0.75")
@@ -1256,19 +1254,13 @@ class ALL2():
         # Assigning values to variable
         get_score_dir = arg.get_score_directory
         output_dir = arg.output_dir
-        reference = arg.reference
-        af_cutoff = float(arg.af_cutoff)
         mosaic_score_cutoff = float(arg.mosaic_score_cutoff)
         germline_score_cutoff = float(arg.germline_score_cutoff)
-        percent_cut_off_germline = 0.5
-        percent_cut_off_mosaic = 0.95
 
         Util.ensure_dir(output_dir)
         explanation_score_file = os.path.join(get_score_dir, "explanation_score.txt")
         vaf_dict = {}
         head = {}
-
-        #df_manifest = pd.read_table(explanation_score_file)
 
         mosaic_cutoff_for_germline_mutations = float(arg.mosaic_score_cutoff_for_germline)
         germline_cutoff_for_mosaic_mutations = float(arg.germline_score_cutoff_for_mosaic)
