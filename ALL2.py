@@ -1062,8 +1062,8 @@ class ALL2():
                     if pair in SV_mutations_dict[sv]:
                         SV_mutations_dict[sv][pair].append(mutation)
                     else:
-                        SV_mutations_dict[sv] = {pair: [mutation]}
-                print(SV_mutations_dict)
+                        SV_mutations_dict[sv]={pair:[]}
+                        SV_mutations_dict[sv][pair].append(mutation)
                 # Getting AD and DP field for case
                 case_format = line[variant_head["FORMAT"]].split(":")
                 try:
@@ -1076,7 +1076,6 @@ class ALL2():
                     variant_dict[sv]=[pair]
                 else:
                     variant_dict[sv].append(pair)
-                print(variant_dict)
                 vaf = 0
                 if pair in pairs_vaf_dict.keys():
                     if sv in pairs_vaf_dict[pair].keys():
@@ -1090,6 +1089,8 @@ class ALL2():
         for pairs in pairs_vaf_dict:
             if pairs[0] not in list_of_samples:
                 list_of_samples.append(pairs[0])
+        print(variant_dict["33"])
+        print(SV_mutations_dict["33s"])
         return variant_dict, SV_mutations_dict, list_of_samples
 
     def explanation_score_sv(self, variant_dict, SV_mutation_dict, list_of_samples, output_dir):
