@@ -1057,12 +1057,15 @@ class ALL2():
                     sv = str(sv_count)
                     SV_dict[sv] = [chr_start_end_svtype]
                     if pair in SV_mutations_dict[sv]:
-                        SV_mutations_dict[sv][pair].append(mutation):
+                        SV_mutations_dict[sv][pair].append(mutation)
                     else:
                         SV_mutations_dict[sv] = {pair:[mutation]}
                 else:
                     SV_dict[sv].append(chr_start_end_svtype)
-                    SV_mutations_dict[sv][pair].append(mutation)
+                    if pair in SV_mutations_dict[sv]:
+                        SV_mutations_dict[sv][pair].append(mutation)
+                    else:
+                        SV_mutations_dict[sv] = {pair: [mutation]}
                 # Getting AD and DP field for case
                 case_format = line[variant_head["FORMAT"]].split(":")
                 try:
