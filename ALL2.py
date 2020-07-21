@@ -1056,10 +1056,7 @@ class ALL2():
                     sv_count += 1
                     sv = str(sv_count)
                     SV_dict[sv] = [chr_start_end_svtype]
-                    if pair in SV_mutations_dict[sv]:
-                        SV_mutations_dict[sv][pair].append(mutation)
-                    else:
-                        SV_mutations_dict[sv] = {pair:[mutation]}
+                    SV_mutations_dict[sv] = {pair:[mutation]}
                 else:
                     SV_dict[sv].append(chr_start_end_svtype)
                     if pair in SV_mutations_dict[sv]:
