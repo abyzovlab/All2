@@ -1096,10 +1096,14 @@ class ALL2():
     def explanation_score_sv(self, variant_dict, SV_mutation_dict, list_of_samples, output_dir):
 
         output_file = os.path.join(output_dir, "explanation_score.txt")
+        output_sv_mapping_file = os.path.join(output_dir, "SV_mapping.txt")
         output_file_fh = open(output_file, 'w')
         output_file_fh.write("#SV\tMosaic_score\tGermline_score\tNumber_of_samples_with_mutation"
-                             "\tSamples_with_mutation\tNumber_of_comparision_per_sample\tSV_type\tmutations"
+                             "\tSamples_with_mutation\tNumber_of_comparision_per_sample\tSV_type"
                              "\n")
+
+        output_sv_mapping_file_fh = open(output_sv_mapping_file, 'w')
+        output_sv_mapping_file_fh.write("#SV\tAssociated_mutations\n")
 
         # number_of_cells_N is the total number of cells in the experiment
         total_number_of_cells_N = len(list_of_samples)
@@ -1132,7 +1136,7 @@ class ALL2():
             sv_type = ""
             for case, control in pairs_list:
                 for mutation in SV_mutation_dict[sv][(case, control)]:
-                        list_of_mutation.append(":".join(mutation.split("\t")[:4]))
+                        list_of_mutation.append(case+":"+:".join(mutation.split("\t")))
                         sv_type = mutation.split("_")[-1]
                 if case in case_dict:
                     case_dict[case][0] = str(int(case_dict[case][0]) + 1)
@@ -1164,12 +1168,15 @@ class ALL2():
                                      str(len(list_of_cases_with_mutation)),
                                      cells_with_mutation,
                                      comparision_for_case,
-                                     mutation_position])
+                                     sv_type])
             output_file_fh.write(output_line + "\n")
+
+            output_sv_mapping_file_fh.write(sv+"\t"+mutation_position+"\n")
 
         pickle.dump(mutation_matrix_dict, mutation_matrix_file_fh)
         mutation_matrix_file_fh.close()
         output_file_fh.close()
+        output_sv_mapping_file_fh.close())
 
     def score_sv(self):
         # Extracting passed arguments
