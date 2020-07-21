@@ -857,6 +857,43 @@ class ALL2():
 
     # SV module starts here
 
+    def reciprocal_overlap(self, SV_dict, chr_start_end_svtype):
+        """ 50 % reciprocal overlap"""
+        chr = chr_start_end_svtype.split("\t")[0]
+        start = int(chr_start_end_svtype.split("\t")[1])
+        end = int(chr_start_end_svtype.split("\t")[2])
+        svtype = chr_start_end_svtype.split("\t")[3]
+        sv_len = end - start
+        sv_list = range(start,end+1)
+
+        for sv in SV_dict:
+            for mutation in SV_dict[sv]:
+                dict_chr_start_end_svtype = mutation.split("\t")
+                dict_chr = dict_chr_start_end_svtype[0]
+                dict_start = int(dict_chr_start_end_svtype[1])
+                dict_end = int(dict_chr_start_end_svtype[2])
+                dict_svtype = dict_chr_start_end_svtype[3]
+                dict_sv_len = dict_end - dict_start
+                if chr != dict_chr or svtype != dict_svtype:
+                    break
+
+                if start >= dict_start and start < dict_end:
+                    overlap_start = start
+                elif dict_start >= start and dict_start < end:
+                    overlap_start = dict_start
+                else:
+                    continue
+                if end < dict_end:
+                    overlap_end = end
+                else:
+                    overlap_end = dict_end
+
+                overlap = overlap_end - overlap_start
+
+                if overlap >= sv_len/2 and overlap >= dict_sv_len/2:
+                    return sv
+        return False
+
     def get_score_argument_parse_sv(self):
         """Parses the command line arguments for get_score"""
         parser = argparse.ArgumentParser(description='get_score')
