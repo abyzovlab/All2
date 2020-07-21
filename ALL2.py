@@ -1060,7 +1060,8 @@ class ALL2():
                 else:
                     SV_dict[sv].append(chr_start_end_svtype)
                     if pair in SV_mutations_dict[sv]:
-                        SV_mutations_dict[sv][pair].append(mutation)
+                        if mutation not in SV_mutations_dict[sv][pair]:
+                            SV_mutations_dict[sv][pair].append(mutation)
                     else:
                         SV_mutations_dict[sv][pair] = [mutation]
 
@@ -1089,8 +1090,6 @@ class ALL2():
         for pairs in pairs_vaf_dict:
             if pairs[0] not in list_of_samples:
                 list_of_samples.append(pairs[0])
-        print(variant_dict["33"])
-        print(SV_mutations_dict["33"])
         return variant_dict, SV_mutations_dict, list_of_samples
 
     def explanation_score_sv(self, variant_dict, SV_mutation_dict, list_of_samples, output_dir):
@@ -1137,7 +1136,7 @@ class ALL2():
             for case, control in pairs_list:
                 for mutation in SV_mutation_dict[sv][(case, control)]:
                         list_of_mutation.append(case+":"+":".join(mutation.split("\t")))
-                        sv_type = mutation.split("_")[-1]
+                        sv_type = mutation.split("\t")[-1]
                 if case in case_dict:
                     case_dict[case][0] = str(int(case_dict[case][0]) + 1)
                 else:
