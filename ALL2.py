@@ -1135,7 +1135,7 @@ class ALL2():
                         list_of_mutation.append(":".join(mutation.split("\t")[:4]))
                         sv_type = mutation.split("_")[-1]
                 if case in case_dict:
-                    case_dict[case][0] = str(int(case_dict[case][1]) + 1)
+                    case_dict[case][0] = str(int(case_dict[case][0]) + 1)
                 else:
                     case_dict[case] = ["1"]
                 mutation_df.loc[case, control] = 1
