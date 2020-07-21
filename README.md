@@ -41,20 +41,36 @@ A tool for filtering variants from all2all comparison of multiple clones or sing
    ```
    
  ## How to use All2:
- The All2 tool has these three commands:
+ The All2 tool has three commands for SNVs and small INDELs:
  1. score
  1. call
  1. matrix
+ 
+ And three commands for structural variants:
+ 1. score_sv
+ 1. call_sv
+ 1. matrix_sv
+ 
+ Note: The options and outputs for SNVs, INDELs and SV are similar, however please keep the following in mind:
+ 1. For structural variants, the only accepted tool is Manta and script doesn't include 'BND' variants
+ 1. Since there is no variant allele frequency available for structural variants from manta the 'call_sv' option
+ is slightly different than the 'call' option.
+ 1. There are no variant allele frequency and mutation spectrum plots for structural variant mode and the format
+ of the output files will be slightly different from the SNV/INDEL analyses.
  ### Usage
  ```
 python ALL2.py -h
 usage:  python ALL2.py <command> [<args>]
-        Three commands to use:
+        Three commands to use for SNVs and small INDELS:
                 score --> Generates mosaic and germline scores.
                 call --> Based on score cut-off generates sample level files/plots for mosaic,
                         germline mutations and plots variant allele frequency, mutation spectrum
                 matrix --> Plot the mutation matrix
-                
+        Three commands to use for structural variants :
+                score_sv --> Generates mosaic and germline scores.
+                call_sv --> Based on score cut-off generates sample level files/plots for mosaic and 
+                        germline mutations 
+                matrix_sv --> Plot the mutation matrix              
 
 All to all comparision
 
@@ -64,6 +80,7 @@ positional arguments:
 optional arguments:
   -h, --help  show this help message and exit
  ```
+*note
 ### 1. score: 
 This is the first step and the other two commands will need the output from this step.
 #### Input

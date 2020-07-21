@@ -1240,7 +1240,7 @@ class ALL2():
         for sample in vaf_dict:
             file_out = os.path.join(per_sample_mutation_dir, sample+".tsv")
             file_out_fh = open(file_out,'w')
-            file_out_fh.write("SV_number\tMosaic_score\tGermline_score\tVariant_type\n")
+            file_out_fh.write("#SV_number\tMosaic_score\tGermline_score\tVariant_type\n")
             for variant_type in vaf_dict[sample]:
                 for pos, vaf, germline_score, mosaic_score in vaf_dict[sample][variant_type]:
                     file_out_fh.write("\t".join(["\t".join(pos.split("_")), str(mosaic_score), str(germline_score), variant_type])+"\n")
