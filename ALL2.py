@@ -1052,17 +1052,17 @@ class ALL2():
                 alt = line[variant_head["ALT"]]
                 mutation = "\t".join([chrm, start_pos, ref, alt, sv_type])
                 sv = self.reciprocal_overlap(SV_dict, chr_start_end_svtype)
+                print(sv)
                 if sv == False:
+                    print("false", mutation)
                     sv_count += 1
                     sv = str(sv_count)
                     SV_dict[sv] = [chr_start_end_svtype]
                     SV_mutations_dict[sv] = {pair:[mutation]}
                 else:
+                    print(sv,mutation)
                     SV_dict[sv].append(chr_start_end_svtype)
-                    if pair in SV_mutations_dict[sv]:
-                        SV_mutations_dict[sv][pair].append(mutation)
-                    else:
-                        SV_mutations_dict[sv] = {pair:[mutation]}
+                    SV_mutations_dict[sv][pair].append(mutation)
                 # Getting AD and DP field for case
                 case_format = line[variant_head["FORMAT"]].split(":")
                 try:
@@ -1088,9 +1088,9 @@ class ALL2():
         for pairs in pairs_vaf_dict:
             if pairs[0] not in list_of_samples:
                 list_of_samples.append(pairs[0])
-        return variant_dict, SV_mutations_dict, pairs_vaf_dict, list_of_samples
+        return variant_dict, SV_mutations_dict, list_of_samples
 
-    def explanation_score_sv(self, variant_dict, SV_mutation_dict, pairs_vaf_dict, list_of_samples, output_dir):
+    def explanation_score_sv(self, variant_dict, SV_mutation_dict, list_of_samples, output_dir):
 
         output_file = os.path.join(output_dir, "explanation_score.txt")
         output_file_fh = open(output_file, 'w')
@@ -1181,7 +1181,7 @@ class ALL2():
 
         # Extracting variant information from the manifest file.
         print("Extracting variant information")
-        variant_dict, SV_mutations_dict, pairs_vaf_dict, list_of_samples,  = self.extract_mutation_information_sv(manifest_file, output_dir,all_mutations)
+        variant_dict, SV_mutations_dict, list_of_samples,  = self.extract_mutation_information_sv(manifest_file, output_dir,all_mutations)
         # variant_dict={mutation:[(case,control)]}
         # SV_mutations_dict={SV:{pair:[mutation]}} , mutation = chrm, start_pos, ref, alt, sv_type
         # pairs_vaf_dict={pairs:{mutation:[vaf]}}
@@ -1189,7 +1189,7 @@ class ALL2():
 
         # Generating explanation score
         print("Generating explanation scores")
-        self.explanation_score_sv(variant_dict, SV_mutations_dict, pairs_vaf_dict, list_of_samples, output_dir)
+        self.explanation_score_sv(variant_dict, SV_mutations_dict, list_of_samples, output_dir)
 
         # Plotting
         print("Plotting")
