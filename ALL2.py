@@ -1076,7 +1076,7 @@ class ALL2():
                     variant_dict[sv]=[pair]
                 else:
                     variant_dict[sv].append(pair)
-                print(variant_dicts)
+                print(variant_dict)
                 vaf = 0
                 if pair in pairs_vaf_dict.keys():
                     if sv in pairs_vaf_dict[pair].keys():
