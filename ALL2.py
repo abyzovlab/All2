@@ -1050,15 +1050,15 @@ class ALL2():
                 chr_start_end_svtype = chrm + "\t" + start_pos + "\t" + end_pos + "\t" + sv_type
                 ref = line[variant_head["REF"]]
                 alt = line[variant_head["ALT"]]
-                mutation = "\t".join([chrm, start_pos, ref, alt])
+                mutation = "\t".join([chrm, start_pos, ref, alt, sv_type])
                 sv = self.reciprocal_overlap(SV_dict, chr_start_end_svtype)
                 if sv == False:
                     sv_count += 1
                     sv = str(sv_count)
-                    SV_dict[sv] = [chr_start_end_svtype]
+                    #SV_dict[sv] = [chr_start_end_svtype]
                     SV_mutations_dict[sv] = {pair:[mutation]}
                 else:
-                    SV_dict[sv].append(chr_start_end_svtype)
+                    #SV_dict[sv].append(chr_start_end_svtype)
                     if pair in SV_mutations_dict[sv]:
                         SV_mutations_dict[sv][pair].append(mutation)
                     else:
@@ -1088,14 +1088,14 @@ class ALL2():
         for pairs in pairs_vaf_dict:
             if pairs[0] not in list_of_samples:
                 list_of_samples.append(pairs[0])
-        return variant_dict, pairs_vaf_dict, list_of_samples
+        return variant_dict, SV_mutations_dict, SV_dict, pairs_vaf_dict, list_of_samples
 
-    def explanation_score_sv(self, variant_dict, pairs_vaf_dict, list_of_samples, output_dir):
+    def explanation_score_sv(self, variant_dict, SV_mutation_dict, pairs_vaf_dict, list_of_samples, output_dir):
 
         output_file = os.path.join(output_dir, "explanation_score.txt")
         output_file_fh = open(output_file, 'w')
         output_file_fh.write("#SV\tMosaic_score\tGermline_score\tNumber_of_samples_with_mutation"
-                             "\tSamples_with_mutation\tVAF_of_samples_with_mutation\tNumber_of_comparision_per_sample"
+                             "\tSamples_with_mutation\tNumber_of_comparision_per_sample\tmutations"
                              "\n")
 
         # number_of_cells_N is the total number of cells in the experiment
@@ -1106,9 +1106,9 @@ class ALL2():
         mutation_matrix_file = os.path.join(output_dir, "mutation_matrix.pkl")
         mutation_matrix_file_fh = open(mutation_matrix_file, 'wb')
 
-        for mutation in variant_dict:
+        for sv in variant_dict:
             # pairs_list is a list of pairs the mutation was called in
-            pairs_list = variant_dict[mutation]
+            pairs_list = variant_dict[sv]
             # pairs_list_n is the number of pairs the mutation was called in
             pairs_list_n = len(pairs_list)
             max_pairs_list_n = int(total_number_of_cells_N/2)*(total_number_of_cells_N-(int(total_number_of_cells_N/2)))
@@ -1126,8 +1126,13 @@ class ALL2():
             list_of_vaf_cases_with_mutation = []
             list_of_comparision_for_case = []
             case_dict = {}
+            list_of_mutation = []
+            sv_type = ""
             for case, control in pairs_list:
-                vaf = str(pairs_vaf_dict[(case, control)][mutation][0])
+                for mutation in SV_mutation_dict[sv][(case, control)]:
+                        list_of_mutation.append(":".join(mutation.split("_")[:4]))
+                        sv_type = mutation.split("_")[-1]
+                vaf = str(pairs_vaf_dict[(case, control)][sv][0])
                 if case in case_dict:
                     case_dict[case][0] = vaf
                     case_dict[case][1] = str(int(case_dict[case][1]) + 1)
@@ -1141,7 +1146,7 @@ class ALL2():
                 list_of_vaf_cases_with_mutation.append(case_dict[case][0])
                 list_of_comparision_for_case.append(case_dict[case][1])
 
-            mutation_matrix_dict["_".join(mutation.split("\t"))] = mutation_df
+            mutation_matrix_dict["_".join(sv.split("\t"))] = mutation_df
 
             # calculating explanation score
             ordered_col_sum = mutation_df.sum(axis=1).sort_values(ascending=False)
@@ -1151,17 +1156,17 @@ class ALL2():
             explanation_score_mosaic = explained_call_n_mosaic / pairs_list_n
             explanation_score_germ = explained_call_n_germ / pairs_list_n
             cells_with_mutation = ",".join(list_of_cases_with_mutation)
-            vaf_of_samples_with_mutation = ",".join(list_of_vaf_cases_with_mutation)
+            mutation_position = ",".join(list_of_mutation)
             comparision_for_case = ",".join(list_of_comparision_for_case)
             if cells_with_mutation == "":
                 cells_with_mutation = "-"
-            output_line = "\t".join(["\t".join(mutation.split("\t")),
+            output_line = "\t".join(["\t".join(sv.split("\t")),
                                      str(explanation_score_mosaic),
                                      str(explanation_score_germ),
                                      str(len(list_of_cases_with_mutation)),
                                      cells_with_mutation,
-                                     vaf_of_samples_with_mutation,
-                                     comparision_for_case])
+                                     comparision_for_case,
+                                     mutation_position])
             output_file_fh.write(output_line + "\n")
 
         pickle.dump(mutation_matrix_dict, mutation_matrix_file_fh)
@@ -1181,14 +1186,15 @@ class ALL2():
 
         # Extracting variant information from the manifest file.
         print("Extracting variant information")
-        variant_dict, pairs_vaf_dict, list_of_samples = self.extract_mutation_information_sv(manifest_file, output_dir,all_mutations)
+        variant_dict, SV_mutations_dict, pairs_vaf_dict, list_of_samples,  = self.extract_mutation_information_sv(manifest_file, output_dir,all_mutations)
         # variant_dict={mutation:[(case,control)]}
+        # SV_mutations_dict={SV:{pair:[mutation]}} , mutation = chrm, start_pos, ref, alt, sv_type
         # pairs_vaf_dict={pairs:{mutation:[vaf]}}
         # list_of_samples = list of all samples in the analysis
 
         # Generating explanation score
         print("Generating explanation scores")
-        self.explanation_score_sv(variant_dict, pairs_vaf_dict, list_of_samples, output_dir)
+        self.explanation_score_sv(variant_dict, SV_mutations_dict, pairs_vaf_dict, list_of_samples, output_dir)
 
         # Plotting
         print("Plotting")
