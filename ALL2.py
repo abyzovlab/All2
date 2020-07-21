@@ -857,7 +857,7 @@ class ALL2():
 
     # SV module starts here
 
-    def get_score_argument_parse(self):
+    def get_score_argument_parse_sv(self):
         """Parses the command line arguments for get_score"""
         parser = argparse.ArgumentParser(description='get_score')
         parser.add_argument("-m", "--manifest_file",
@@ -900,7 +900,7 @@ class ALL2():
         return parser
 
     def matrix_sv(self):
-        parser = self.mutation_matrix_plot_argument_parse()
+        parser = self.mutation_matrix_plot_argument_parse_sv()
         arg = parser.parse_args(sys.argv[2:])
         import seaborn as sns
         # Assigning values to variable
