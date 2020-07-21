@@ -857,7 +857,7 @@ class ALL2():
 
     # SV module starts here
 
-    def reciprocal_overlap(self, SV_dict, chr_start_end_svtype):
+    def reciprocal_overlap(self, SV_dict, chr_start_end_svtype, overlap_percent = 0.5):
         """ 50 % reciprocal overlap"""
         chr = chr_start_end_svtype.split("\t")[0]
         start = int(chr_start_end_svtype.split("\t")[1])
@@ -890,7 +890,7 @@ class ALL2():
 
                 overlap = overlap_end - overlap_start
 
-                if overlap >= sv_len/2 and overlap >= dict_sv_len/2:
+                if overlap >= int(sv_len * overlap_percent) and overlap >= int(dict_sv_len * overlap_percent):
                     return sv
         return False
 
@@ -1060,7 +1060,7 @@ class ALL2():
                     SV_dict[sv] = [chr_start_end_svtype]
                     SV_mutations_dict[sv] = {pair:[mutation]}
                 else:
-                    print(sv,mutation)
+                    print("found mutation", sv, mutation)
                     SV_dict[sv].append(chr_start_end_svtype)
                     SV_mutations_dict[sv][pair].append(mutation)
                 # Getting AD and DP field for case
