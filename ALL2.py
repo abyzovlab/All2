@@ -1055,10 +1055,10 @@ class ALL2():
                 if sv == False:
                     sv_count += 1
                     sv = str(sv_count)
-                    #SV_dict[sv] = [chr_start_end_svtype]
+                    SV_dict[sv] = [chr_start_end_svtype]
                     SV_mutations_dict[sv] = {pair:[mutation]}
                 else:
-                    #SV_dict[sv].append(chr_start_end_svtype)
+                    SV_dict[sv].append(chr_start_end_svtype)
                     if pair in SV_mutations_dict[sv]:
                         SV_mutations_dict[sv][pair].append(mutation)
                     else:
@@ -1095,7 +1095,7 @@ class ALL2():
         output_file = os.path.join(output_dir, "explanation_score.txt")
         output_file_fh = open(output_file, 'w')
         output_file_fh.write("#SV\tMosaic_score\tGermline_score\tNumber_of_samples_with_mutation"
-                             "\tSamples_with_mutation\tNumber_of_comparision_per_sample\tmutations"
+                             "\tSamples_with_mutation\tNumber_of_comparision_per_sample\tSV_type\tmutations"
                              "\n")
 
         # number_of_cells_N is the total number of cells in the experiment
@@ -1123,30 +1123,25 @@ class ALL2():
             mutation_df = pd.DataFrame(np.zeros((total_number_of_cells_N, total_number_of_cells_N)),
                                        index=list_of_samples, columns=list_of_samples)
             list_of_cases_with_mutation = []
-            list_of_vaf_cases_with_mutation = []
             list_of_comparision_for_case = []
             case_dict = {}
             list_of_mutation = []
             sv_type = ""
             for case, control in pairs_list:
                 for mutation in SV_mutation_dict[sv][(case, control)]:
-                        list_of_mutation.append(":".join(mutation.split("_")[:4]))
+                        list_of_mutation.append(":".join(mutation.split("\t")[:4]))
                         sv_type = mutation.split("_")[-1]
-                vaf = str(pairs_vaf_dict[(case, control)][sv][0])
                 if case in case_dict:
-                    case_dict[case][0] = vaf
-                    case_dict[case][1] = str(int(case_dict[case][1]) + 1)
+                    case_dict[case][0] = str(int(case_dict[case][1]) + 1)
                 else:
-                    case_dict[case] = [vaf, "1"]
-
+                    case_dict[case] = ["1"]
                 mutation_df.loc[case, control] = 1
 
             for case in case_dict:
                 list_of_cases_with_mutation.append(case)
-                list_of_vaf_cases_with_mutation.append(case_dict[case][0])
-                list_of_comparision_for_case.append(case_dict[case][1])
+                list_of_comparision_for_case.append(case_dict[case][0])
 
-            mutation_matrix_dict["_".join(sv.split("\t"))] = mutation_df
+            mutation_matrix_dict[sv] = mutation_df
 
             # calculating explanation score
             ordered_col_sum = mutation_df.sum(axis=1).sort_values(ascending=False)
