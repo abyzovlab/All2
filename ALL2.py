@@ -1052,18 +1052,17 @@ class ALL2():
                 alt = line[variant_head["ALT"]]
                 mutation = "\t".join([chrm, start_pos, ref, alt, sv_type])
                 sv = self.reciprocal_overlap(SV_dict, chr_start_end_svtype)
-                print(sv)
                 if sv == False:
-                    print("false", mutation)
                     sv_count += 1
                     sv = str(sv_count)
                     SV_dict[sv] = [chr_start_end_svtype]
-                    SV_mutations_dict[sv] = {pair:[mutation]}
+                    if pair in SV_mutations_dict[sv]:
+                        SV_mutations_dict[sv][pair].append(mutation):
+                    else:
+                        SV_mutations_dict[sv] = {pair:[mutation]}
                 else:
-                    print("found mutation", sv, mutation)
                     SV_dict[sv].append(chr_start_end_svtype)
                     SV_mutations_dict[sv][pair].append(mutation)
-                    print(SV_mutations_dict[sv])
                 # Getting AD and DP field for case
                 case_format = line[variant_head["FORMAT"]].split(":")
                 try:
