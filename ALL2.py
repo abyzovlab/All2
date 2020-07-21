@@ -1136,7 +1136,7 @@ class ALL2():
             sv_type = ""
             for case, control in pairs_list:
                 for mutation in SV_mutation_dict[sv][(case, control)]:
-                        list_of_mutation.append(case+":"+:".join(mutation.split("\t")))
+                        list_of_mutation.append(case+":"+":".join(mutation.split("\t")))
                         sv_type = mutation.split("_")[-1]
                 if case in case_dict:
                     case_dict[case][0] = str(int(case_dict[case][0]) + 1)
