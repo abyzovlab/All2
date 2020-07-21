@@ -1088,7 +1088,7 @@ class ALL2():
         for pairs in pairs_vaf_dict:
             if pairs[0] not in list_of_samples:
                 list_of_samples.append(pairs[0])
-        return variant_dict, SV_mutations_dict, SV_dict, pairs_vaf_dict, list_of_samples
+        return variant_dict, SV_mutations_dict, pairs_vaf_dict, list_of_samples
 
     def explanation_score_sv(self, variant_dict, SV_mutation_dict, pairs_vaf_dict, list_of_samples, output_dir):
 
