@@ -20,11 +20,16 @@ class ALL2():
     def __init__(self):
         parser = argparse.ArgumentParser(description='All to all comparision',
                                          usage=''' python ALL2.py <command> [<args>]
-        Three commands to use:
+        Three commands to use for SNVs and small INDELS:
                 score --> Generates mosaic and germline scores.
                 call --> Based on score cut-off generates sample level files/plots for mosaic,
                         germline mutations and plots variant allele frequency, mutation spectrum
                 matrix --> Plot the mutation matrix
+        Three commands to use for structural variants :
+                score_sv --> Generates mosaic and germline scores.
+                call_sv --> Based on score cut-off generates sample level files/plots for mosaic and 
+                        germline mutations 
+                matrix_sv --> Plot the mutation matrix
                 ''')
         parser.add_argument('command', help='Please specify score/call/matrix as a command')
         args = parser.parse_args(sys.argv[1:2])
@@ -848,6 +853,446 @@ class ALL2():
         mutation_spectrum_output_dir = os.path.join(output_dir, "mutation_spectrum")
         Util.ensure_dir(mutation_spectrum_output_dir)
         self.plot_mutation_spectrum(vaf_dict, af_cutoff, mutation_spectrum_output_dir, reference)
+
+
+    # SV module starts here
+
+    def get_score_argument_parse(self):
+        """Parses the command line arguments for get_score"""
+        parser = argparse.ArgumentParser(description='get_score')
+        parser.add_argument("-m", "--manifest_file",
+                            help="Path to manifest file",
+                            required=True,
+                            type=Util.FileValidator)
+        parser.add_argument("-o", "--output_dir",
+                            help="Path to directory where results will be written",
+                            required=True)
+        parser.add_argument("-a", "--all_mutations",
+                            help="Use this option to use all mutations in the vcf. By default only pass variants are "
+                                 "used",
+                            type=bool, nargs='?',
+                            const=True, default=False)
+        return parser
+
+    def mutation_matrix_plot_argument_parse_sv(self):
+        parser = argparse.ArgumentParser(description='Plotting mutation matrix')
+        parser.add_argument("-g", "--get_score_directory", help="Path to output folder of get_score", required=True,
+                            type=Util.DirectoryValidator)
+        parser.add_argument("-o", "--output_dir", help="Path to directory where results will be written",
+                            required=True)
+        parser.add_argument("-m", "--mutation", help="Provide the SV number(eg. 27)",
+                            required=True, action='append')
+        return parser
+
+    def apply_score_argument_parse_sv(self):
+        """Parses the command line arguments for apply_score"""
+        parser = argparse.ArgumentParser(description='apply_score')
+        parser.add_argument("-g", "--get_score_directory", help="Path to output directory of the get_score option",
+                            required=True, type=Util.DirectoryValidator)
+        parser.add_argument("-r", "--reference", help="Path to reference file", required=True,
+                            type=Util.FileValidator)
+        parser.add_argument("-o", "--output_dir", help="Path to directory where results will be written",
+                            required=True)
+        parser.add_argument("-ms", "--mosaic_score_cutoff", help="Mosaic score cut-off (default=0.75)", default="0.75")
+        parser.add_argument("-gs", "--germline_score_cutoff", help="Germline score cut-off (default=0.75)", default="0.75")
+        parser.add_argument("-msg", "--mosaic_score_cutoff_for_germline", help="Mosaic score cut-off for germline mutations (default=0.2)", default="0.2")
+        parser.add_argument("-gsm", "--germline_score_cutoff_for_mosaic", help="Germline score cut-off for mosaic mutation (default=0.5)", default="0.5")
+        return parser
+
+    def matrix_sv(self):
+        parser = self.mutation_matrix_plot_argument_parse()
+        arg = parser.parse_args(sys.argv[2:])
+        import seaborn as sns
+        # Assigning values to variable
+        ALL2_output = arg.get_score_directory
+        output_dir = arg.output_dir
+        mutation_list = arg.mutation
+        explanation_file = os.path.join(ALL2_output, "explanation_score.txt")
+        Util.ensure_dir(output_dir)
+
+        explanation_dict = {}
+        head = {}
+        for i in open(explanation_file):
+            line = i.strip().split("\t")
+            if i.startswith("#"):
+                for n, j in enumerate(line):
+                    head[j] = n
+                continue
+            mosaic_score = line[head["Mosaic_score"]]
+            germline_score = line[head["Germline_score"]]
+            samples = line[head["Samples_with_mutation"]].split(",")
+            vaf_samples = line[head["VAF_of_samples_with_mutation"]].split(",")
+            # mutation = "_".join([chrm, pos, ref, alt])
+            mutation = line[head["#SV"]]
+            mutation_related_info = {"mosaic_score": mosaic_score, "germline_score": germline_score,
+                                     "sample": samples, "vaf_samples": vaf_samples}
+            explanation_dict[mutation] = mutation_related_info
+        # loading pickle file
+        print("Loading pickle file")
+        mutation_matrix_file = os.path.join(ALL2_output, "mutation_matrix.pkl")
+        mutation_matrix_file_fh = open(mutation_matrix_file, "rb")
+        mutation_matrix_dict = pickle.load(mutation_matrix_file_fh)
+
+        # plotting mutation
+        print("Plotting mutation matrix")
+        for mutation in mutation_list:
+            print(mutation)
+            if mutation not in mutation_matrix_dict:
+                print("Mutation " + mutation + " not found")
+                continue
+            mutation_df = mutation_matrix_dict[mutation]
+            # fig, (ax1, ax2) = plt.subplots(1, 2, gridspec_kw={'width_ratios': [8, 1]})
+            ax1 = sns.heatmap(mutation_df, cmap="Blues", cbar=False, linewidths=.5)
+            ax1.set_ylim(len(mutation_df.index), 0)
+
+            ax1.set_title(mutation)
+            # ax2.set_title("VAF", fontsize=10)
+            # mosaic_score = explanation_dict[mutation]["mosaic_score"]
+            # germline_score = explanation_dict[mutation]["germline_score"]
+            plt.tight_layout()
+            plt.savefig(os.path.join(output_dir, mutation + ".png"))
+            plt.close()
+
+    def extract_mutation_information_sv(self, manifest_file, output_dir, all_mutations):
+        variant_dict = {}
+        SV_mutations_dict = {}
+        SV_dict = {}
+        pairs_vaf_dict = {}
+        head = {}
+        sv_count = 0
+        for i in open(manifest_file):
+            line = i.strip().split("\t")
+            if i.startswith("#"):
+                for n, j in enumerate(line):
+                    head[j.replace("#", "")] = n
+                continue
+            case = line[head["Case"]]
+            control = line[head["Control"]]
+            try:
+                case_in_vcf = line[head["Case_in_vcf"]]
+                control_in_vcf = line[head["Control_in_vcf"]]
+            except KeyError:
+                case_in_vcf = case
+                control_in_vcf = control
+            filename = line[head["Filename"]]
+            pair = (case, control)
+            if filename.endswith("vcf.gz"):
+                filename_fh = gzip.open(filename)
+            elif filename.endswith("vcf"):
+                filename_fh = open(filename)
+            else:
+                print("Please make sure you provide a valid vcf file")
+                exit()
+            variant_head = {}
+            # Reading variants from the vcf file
+            for variant in filename_fh:
+                try:
+                    variant = variant.decode("utf-8")
+                except AttributeError:
+                    pass
+                line = variant.strip().split("\t")
+                if variant.startswith("#"):
+                    if variant.startswith("#CHROM"):
+                        for n, j in enumerate(line):
+                            variant_head[j] = n
+                        if case_in_vcf not in variant_head or control_in_vcf not in variant_head:
+                                print("Add columns to the manifest file, 'Control_in_vcf' and 'Case_in_vcf' if not already added.")
+                                print("Please make sure the name of case and control match the names in the vcf file.")
+                                exit()
+                    continue
+                filter = line[variant_head["FILTER"]]
+                if filter != "PASS" and all_mutations:
+                    continue
+                chrm = line[variant_head["#CHROM"]]
+                start_pos = line[variant_head["POS"]]
+                for j in line[variant_head["INFO"]].split(";"):
+                    if j.startswith("END"):
+                        end_pos = j.split("=")[1]
+                    if j.startswith("SVTYPE"):
+                        sv_type = j.split("=")[1]
+                if sv_type == "BND":
+                    continue
+                chr_start_end_svtype = chrm + "\t" + start_pos + "\t" + end_pos + "\t" + sv_type
+                ref = line[variant_head["REF"]]
+                alt = line[variant_head["ALT"]]
+                mutation = "\t".join([chrm, start_pos, ref, alt])
+                sv = self.reciprocal_overlap(SV_dict, chr_start_end_svtype)
+                if sv == False:
+                    sv_count += 1
+                    sv = str(sv_count)
+                    SV_dict[sv] = [chr_start_end_svtype]
+                    SV_mutations_dict[sv] = {pair:[mutation]}
+                else:
+                    SV_dict[sv].append(chr_start_end_svtype)
+                    if pair in SV_mutations_dict[sv]:
+                        SV_mutations_dict[sv][pair].append(mutation)
+                    else:
+                        SV_mutations_dict[sv] = {pair:[mutation]}
+                # Getting AD and DP field for case
+                case_format = line[variant_head["FORMAT"]].split(":")
+                try:
+                    case_genotype = line[variant_head[case_in_vcf]].split(":")
+                except KeyError:
+                    print("Please make sure the name of the case and control in the manifest file match the"
+                          " case and control specified in the vcf")
+                    exit()
+                if sv not in variant_dict:
+                    variant_dict[sv]=[pair]
+                else:
+                    variant_dict[sv].append(pair)
+                vaf = 0
+                if pair in pairs_vaf_dict.keys():
+                    if sv in pairs_vaf_dict[pair].keys():
+                        pairs_vaf_dict[pair][sv].append(vaf)
+                    else:
+                        pairs_vaf_dict[pair][sv] = [vaf]
+                else:
+                    pairs_vaf_dict[pair] = {sv: [vaf]}
+        filename_fh.close()
+        list_of_samples = []
+        for pairs in pairs_vaf_dict:
+            if pairs[0] not in list_of_samples:
+                list_of_samples.append(pairs[0])
+        return variant_dict, pairs_vaf_dict, list_of_samples
+
+    def explanation_score_sv(self, variant_dict, pairs_vaf_dict, list_of_samples, output_dir):
+
+        output_file = os.path.join(output_dir, "explanation_score.txt")
+        output_file_fh = open(output_file, 'w')
+        output_file_fh.write("#SV\tMosaic_score\tGermline_score\tNumber_of_samples_with_mutation"
+                             "\tSamples_with_mutation\tVAF_of_samples_with_mutation\tNumber_of_comparision_per_sample"
+                             "\n")
+
+        # number_of_cells_N is the total number of cells in the experiment
+        total_number_of_cells_N = len(list_of_samples)
+
+        # Preparing to store the data matrix for each mutation
+        mutation_matrix_dict = {}
+        mutation_matrix_file = os.path.join(output_dir, "mutation_matrix.pkl")
+        mutation_matrix_file_fh = open(mutation_matrix_file, 'wb')
+
+        for mutation in variant_dict:
+            # pairs_list is a list of pairs the mutation was called in
+            pairs_list = variant_dict[mutation]
+            # pairs_list_n is the number of pairs the mutation was called in
+            pairs_list_n = len(pairs_list)
+            max_pairs_list_n = int(total_number_of_cells_N/2)*(total_number_of_cells_N-(int(total_number_of_cells_N/2)))
+            # cell_fraction_f is the fraction of cells carrying the mutation
+            try:
+                cell_fraction_f = 1 / 2 - sqrt(1 / 4 - pairs_list_n / total_number_of_cells_N ** 2)
+            except ValueError:
+                continue
+            # is the number of cells carrying the mutation
+            cells_carrying_mutation_Nv = round(cell_fraction_f * total_number_of_cells_N)
+            # Creating an 'zero' data frame/matrix and updating mutation specific dataframe/matrix
+            mutation_df = pd.DataFrame(np.zeros((total_number_of_cells_N, total_number_of_cells_N)),
+                                       index=list_of_samples, columns=list_of_samples)
+            list_of_cases_with_mutation = []
+            list_of_vaf_cases_with_mutation = []
+            list_of_comparision_for_case = []
+            case_dict = {}
+            for case, control in pairs_list:
+                vaf = str(pairs_vaf_dict[(case, control)][mutation][0])
+                if case in case_dict:
+                    case_dict[case][0] = vaf
+                    case_dict[case][1] = str(int(case_dict[case][1]) + 1)
+                else:
+                    case_dict[case] = [vaf, "1"]
+
+                mutation_df.loc[case, control] = 1
+
+            for case in case_dict:
+                list_of_cases_with_mutation.append(case)
+                list_of_vaf_cases_with_mutation.append(case_dict[case][0])
+                list_of_comparision_for_case.append(case_dict[case][1])
+
+            mutation_matrix_dict["_".join(mutation.split("\t"))] = mutation_df
+
+            # calculating explanation score
+            ordered_col_sum = mutation_df.sum(axis=1).sort_values(ascending=False)
+            ordered_row_sum = mutation_df.sum(axis=0).sort_values(ascending=False)
+            explained_call_n_mosaic = ordered_col_sum[:cells_carrying_mutation_Nv].sum()
+            explained_call_n_germ = ordered_row_sum[:cells_carrying_mutation_Nv].sum()
+            explanation_score_mosaic = explained_call_n_mosaic / pairs_list_n
+            explanation_score_germ = explained_call_n_germ / pairs_list_n
+            cells_with_mutation = ",".join(list_of_cases_with_mutation)
+            vaf_of_samples_with_mutation = ",".join(list_of_vaf_cases_with_mutation)
+            comparision_for_case = ",".join(list_of_comparision_for_case)
+            if cells_with_mutation == "":
+                cells_with_mutation = "-"
+            output_line = "\t".join(["\t".join(mutation.split("\t")),
+                                     str(explanation_score_mosaic),
+                                     str(explanation_score_germ),
+                                     str(len(list_of_cases_with_mutation)),
+                                     cells_with_mutation,
+                                     vaf_of_samples_with_mutation,
+                                     comparision_for_case])
+            output_file_fh.write(output_line + "\n")
+
+        pickle.dump(mutation_matrix_dict, mutation_matrix_file_fh)
+        mutation_matrix_file_fh.close()
+        output_file_fh.close()
+
+    def score_sv(self):
+        # Extracting passed arguments
+        parser = self.get_score_argument_parse_sv()
+        arg = parser.parse_args(sys.argv[2:])
+
+        # Assigning values to variable
+        manifest_file = arg.manifest_file
+        output_dir = arg.output_dir
+        all_mutations = arg.all_mutations
+        Util.ensure_dir(output_dir)
+
+        # Extracting variant information from the manifest file.
+        print("Extracting variant information")
+        variant_dict, pairs_vaf_dict, list_of_samples = self.extract_mutation_information_sv(manifest_file, output_dir,all_mutations)
+        # variant_dict={mutation:[(case,control)]}
+        # pairs_vaf_dict={pairs:{mutation:[vaf]}}
+        # list_of_samples = list of all samples in the analysis
+
+        # Generating explanation score
+        print("Generating explanation scores")
+        self.explanation_score_sv(variant_dict, pairs_vaf_dict, list_of_samples, output_dir)
+
+        # Plotting
+        print("Plotting")
+        # plotting(output_dir,list_of_samples,af_cutoff)
+        self.plot_score(output_dir)
+
+    def plot_bar_sv(self, vaf_dict, output_dir,):
+        """ plotting bar plot """
+        output_file = os.path.join(output_dir, "mutation_type_count.png")
+        mutation_count = {"Mosaic": 0, "Germline": 0, "Noise": 0}
+        mutation_count_per_sample = {}
+        variant_list = []
+        for sample in vaf_dict:
+            mutation_count_per_sample[sample] = {"Mosaic": 0, "Germline": 0, "Noise": 0}
+            for variant_type in ["Mosaic", "Germline", "Noise"]:
+                for pos, vaf, germline_score, mosaic_score in vaf_dict[sample][variant_type]:
+                    if pos not in variant_list:
+                        mutation_count[variant_type] += 1
+                        variant_list.append(pos)
+                        mutation_count_per_sample[sample][variant_type] += 1
+        df = pd.DataFrame.from_dict(mutation_count, orient='index')
+        title = "Number of unique mutations across all samples"
+        ax = df.plot(kind='bar', legend=False, title=title, alpha=0.60, grid=False)
+
+        for i in ax.patches:
+            # get_x pulls left or right; get_height pushes up or down
+            ax.text(i.get_x() + 0.15, i.get_height() / 2,
+                    str(i.get_height()), fontsize=10, color='black')
+
+        plt.ylabel("Number of mutations")
+        plt.tight_layout()
+        plt.savefig(output_file)
+        plt.close()
+
+        # Per sample variant counts
+        df = pd.DataFrame.from_dict(mutation_count_per_sample, orient='index')
+        output_file_per_sample = os.path.join(output_dir, "per_sample_mutation_count.png")
+        title = "Structural variants "
+        ax = df.plot(kind='bar', legend=True, grid=False)
+        plt.title(title)
+        plt.ylabel("Number of mutations")
+        plt.legend(loc='upper left', bbox_to_anchor=(1.0, 0.5))
+        plt.tight_layout()
+        plt.savefig(output_file_per_sample)
+        plt.close()
+
+    def per_sample_mutation_sv(self, vaf_dict, per_sample_mutation_dir):
+        """Creating per sample mutation file"""
+        for sample in vaf_dict:
+            file_out = os.path.join(per_sample_mutation_dir, sample+".tsv")
+            file_out_fh = open(file_out,'w')
+            file_out_fh.write("#Chr\tPos\tRef\tAlt\tVAF\tMosaic_score\tGermline_score\tVariant_type\n")
+            for variant_type in vaf_dict[sample]:
+                for pos, vaf, germline_score, mosaic_score in vaf_dict[sample][variant_type]:
+                    file_out_fh.write("\t".join(["\t".join(pos.split("_")), str(vaf), str(mosaic_score), str(germline_score), variant_type])+"\n")
+            file_out_fh.close()
+
+    def call_sv(self):
+        # Extracting passed arguments
+        parser = self.apply_score_argument_parse_sv()
+        arg = parser.parse_args(sys.argv[2:])
+
+        # Assigning values to variable
+        get_score_dir = arg.get_score_directory
+        output_dir = arg.output_dir
+        reference = arg.reference
+        af_cutoff = float(arg.af_cutoff)
+        mosaic_score_cutoff = float(arg.mosaic_score_cutoff)
+        germline_score_cutoff = float(arg.germline_score_cutoff)
+        percent_cut_off_germline = 0.5
+        percent_cut_off_mosaic = 0.95
+
+        Util.ensure_dir(output_dir)
+        explanation_score_file = os.path.join(get_score_dir, "explanation_score.txt")
+        vaf_dict = {}
+        head = {}
+
+        #df_manifest = pd.read_table(explanation_score_file)
+
+        mosaic_cutoff_for_germline_mutations = float(arg.mosaic_score_cutoff_for_germline)
+        germline_cutoff_for_mosaic_mutations = float(arg.germline_score_cutoff_for_mosaic)
+
+        for i in open(explanation_score_file):
+            line = i.strip().split("\t")
+            if i.startswith("#"):
+                for n, j in enumerate(line):
+                    head[j] = n
+                continue
+            pos = line[head["#SV"]]
+            list_of_samples = line[head["Samples_with_mutation"]].split(",")
+            list_of_vafs = line[head["VAF_of_samples_with_mutation"]].split(",")
+            variant_type = ""
+            germline_score = float(line[head["Germline_score"]])
+            mosaic_score = float(line[head["Mosaic_score"]])
+
+            # this block annotated the mutation as mosaic, germline or noise
+            if mosaic_score > mosaic_score_cutoff:
+                y_curve = y_curve = self.plot_curve([mosaic_score_cutoff], mosaic_score_cutoff, germline_score_cutoff)[0]
+            else:
+                y_curve = self.plot_curve([mosaic_score], mosaic_score_cutoff, germline_score_cutoff)[0]
+            if germline_score > germline_score_cutoff:
+                x_curve = self.plot_curve([germline_score_cutoff], germline_score_cutoff, mosaic_score_cutoff)[0]
+            else:
+                x_curve = self.plot_curve([germline_score], germline_score_cutoff, mosaic_score_cutoff)[0]
+            if mosaic_score < x_curve and germline_score < y_curve:
+                variant_type = "Noise"
+            elif germline_score > y_curve and mosaic_score > x_curve and mosaic_score >= mosaic_cutoff_for_germline_mutations and germline_score > germline_cutoff_for_mosaic_mutations:
+                variant_type = "Mosaic_high_freq"
+            elif germline_score > y_curve and mosaic_score > x_curve and mosaic_score >= mosaic_cutoff_for_germline_mutations and germline_score <= germline_cutoff_for_mosaic_mutations:
+                variant_type = "Mosaic"
+            elif germline_score > y_curve and x_curve < mosaic_score < mosaic_cutoff_for_germline_mutations:
+                variant_type = "Germline"
+            else:
+                print("variant type not detected, check for bugs in variant type definition")
+
+            for index, sample in enumerate(list_of_samples):
+                vaf = float(list_of_vafs[index])
+                if sample in vaf_dict:
+                    if variant_type in vaf_dict[sample]:
+                        vaf_dict[sample][variant_type].append((pos, vaf, germline_score, mosaic_score))
+                    else:
+                        vaf_dict[sample][variant_type] = [(pos, vaf, germline_score, mosaic_score)]
+                else:
+                    vaf_dict[sample] = {}
+
+        # structure of vaf_dict={sample:{variant_type:[(pos,vaf)]}}  ; pos = chr pos ref alt
+
+        # per sample mutation file
+        per_sample_mutation_dir = os.path.join(output_dir, "per_sample_mutation")
+        Util.ensure_dir(per_sample_mutation_dir)
+        self.per_sample_mutation_sv(vaf_dict,per_sample_mutation_dir)
+
+        # plotting
+        self.plot_score_annotate(explanation_score_file, output_dir, mosaic_score_cutoff, germline_score_cutoff, mosaic_cutoff_for_germline_mutations,
+                                 germline_cutoff_for_mosaic_mutations)
+
+        mutation_count_output_dir = os.path.join(output_dir, "mutation_counts")
+        Util.ensure_dir(mutation_count_output_dir)
+        self.plot_bar_sv(vaf_dict, mutation_count_output_dir)
 
 
 if __name__ == '__main__':
