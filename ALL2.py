@@ -1285,7 +1285,6 @@ class ALL2():
                 continue
             pos = line[head["#SV"]]
             list_of_samples = line[head["Samples_with_mutation"]].split(",")
-            list_of_vafs = line[head["VAF_of_samples_with_mutation"]].split(",")
             variant_type = ""
             germline_score = float(line[head["Germline_score"]])
             mosaic_score = float(line[head["Mosaic_score"]])
@@ -1311,7 +1310,7 @@ class ALL2():
                 print("variant type not detected, check for bugs in variant type definition")
 
             for index, sample in enumerate(list_of_samples):
-                vaf = float(list_of_vafs[index])
+                vaf = ""
                 if sample in vaf_dict:
                     if variant_type in vaf_dict[sample]:
                         vaf_dict[sample][variant_type].append((pos, vaf, germline_score, mosaic_score))
