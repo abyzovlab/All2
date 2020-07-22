@@ -958,7 +958,7 @@ class ALL2():
             samples = line[head["Samples_with_mutation"]].split(",")
             mutation = line[head["#SV"]]
             mutation_related_info = {"mosaic_score": mosaic_score, "germline_score": germline_score,
-                                     "sample": samples, "vaf_samples": vaf_samples}
+                                     "sample": samples}
             explanation_dict[mutation] = mutation_related_info
         # loading pickle file
         print("Loading pickle file")
