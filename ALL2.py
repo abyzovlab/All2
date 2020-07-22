@@ -956,8 +956,6 @@ class ALL2():
             mosaic_score = line[head["Mosaic_score"]]
             germline_score = line[head["Germline_score"]]
             samples = line[head["Samples_with_mutation"]].split(",")
-            vaf_samples = line[head["VAF_of_samples_with_mutation"]].split(",")
-            # mutation = "_".join([chrm, pos, ref, alt])
             mutation = line[head["#SV"]]
             mutation_related_info = {"mosaic_score": mosaic_score, "germline_score": germline_score,
                                      "sample": samples, "vaf_samples": vaf_samples}
@@ -976,14 +974,10 @@ class ALL2():
                 print("Mutation " + mutation + " not found")
                 continue
             mutation_df = mutation_matrix_dict[mutation]
-            # fig, (ax1, ax2) = plt.subplots(1, 2, gridspec_kw={'width_ratios': [8, 1]})
             ax1 = sns.heatmap(mutation_df, cmap="Blues", cbar=False, linewidths=.5)
             ax1.set_ylim(len(mutation_df.index), 0)
 
             ax1.set_title(mutation)
-            # ax2.set_title("VAF", fontsize=10)
-            # mosaic_score = explanation_dict[mutation]["mosaic_score"]
-            # germline_score = explanation_dict[mutation]["germline_score"]
             plt.tight_layout()
             plt.savefig(os.path.join(output_dir, mutation + ".png"))
             plt.close()
