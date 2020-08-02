@@ -745,6 +745,8 @@ class ALL2():
             file_out_fh.write("#Chr\tPos\tRef\tAlt\tVAF\tMosaic_score\tGermline_score\tVariant_type\n")
             for variant_type in vaf_dict[sample]:
                 for pos, vaf, germline_score, mosaic_score in vaf_dict[sample][variant_type]:
+                    if vaf < af_cutoff:
+                        continue
                     file_out_fh.write("\t".join(["\t".join(pos.split("_")), str(vaf), str(mosaic_score), str(germline_score), variant_type])+"\n")
             file_out_fh.close()
 
@@ -834,7 +836,7 @@ class ALL2():
         # per sample mutation file
         per_sample_mutation_dir = os.path.join(output_dir, "per_sample_mutation")
         Util.ensure_dir(per_sample_mutation_dir)
-        self.per_sample_mutation(vaf_dict,per_sample_mutation_dir)
+        self.per_sample_mutation(vaf_dict,per_sample_mutation_dir,af_cutoff)
 
 
 
