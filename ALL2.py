@@ -737,7 +737,7 @@ class ALL2():
                 self.mutation_spectrum_plot(mutation_spectra_file, output_dir, sample, variant_type)
                 self.six_mutation_spectrum_plot(mutation_spectra_file, output_dir, sample, variant_type)
 
-    def per_sample_mutation(self, vaf_dict, per_sample_mutation_dir):
+    def per_sample_mutation(self, vaf_dict, per_sample_mutation_dir, af_cutoff):
         """Creating per sample mutation file"""
         for sample in vaf_dict:
             file_out = os.path.join(per_sample_mutation_dir, sample+".tsv")
