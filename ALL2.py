@@ -124,10 +124,12 @@ class ALL2():
             germline_score = line[head["Germline_score"]]
             samples = line[head["Samples_with_mutation"]].split(",")
             vaf_samples = line[head["VAF_of_samples_with_mutation"]].split(",")
+            excluded_samples = line[head["Excluded_samples"]]
             mutation = "_".join([chrm, pos, ref, alt])
             mutation_related_info = {"mosaic_score": mosaic_score, "germline_score": germline_score,
                                      "sample": samples, "vaf_samples": vaf_samples}
             explanation_dict[mutation] = mutation_related_info
+
         # loading pickle file
         print("Loading pickle file")
         mutation_matrix_file = os.path.join(ALL2_output, "mutation_matrix.pkl")
@@ -174,16 +176,50 @@ class ALL2():
             ax2.set_title("VAF", fontsize=10)
             # mosaic_score = explanation_dict[mutation]["mosaic_score"]
             # germline_score = explanation_dict[mutation]["germline_score"]
+
+            ## graying out unused samples
+            ylabel = ax1.get_yticklabels()
+            xlabel = ax2.get_xticklabels()
+            for n_x, x in enumerate(xlabel):
+                if x.get_text() in excluded_sample:
+                    g.add_patch(
+                        Rectangle((n_x, 0), 1, len(ylabel), alpha=0.5, edgecolor=None, color='gray', lw=None, ls=None))
+            for n_y, y in enumerate(ylabel):
+                if y.get_text() in excluded_sample:
+                    g.add_patch(
+                        Rectangle((0, n_y), len(xlabel), 1, alpha=0.5, edgecolor=None, color='gray', lw=None, ls=None))
+
             plt.tight_layout()
             plt.savefig(os.path.join(output_dir, mutation + ".png"))
             plt.close()
 
+    def vcf_check_for_chr(self,filename):
+
+        if filename.endswith("vcf.gz"):
+            filename_fh = gzip.open(filename)
+        elif filename.endswith("vcf"):
+            filename_fh = open(filename)
+        for variant in filename_fh:
+            try:
+                variant = variant.decode("utf-8")
+            except AttributeError:
+                pass
+            if variant.startswith("#"):
+                continue
+            line = variant.strip().split("\t")
+            if line[0].startswith("chr"):
+                return "withchr"
+            else:
+                return "withoutchr"
+
     def extract_mutation_information(self, manifest_file, output_dir, all_mutations):
         variant_dict = {}
+        variant_dict_excluded ={}
         pairs_vaf_dict = {}
         head = {}
         for i in open(manifest_file):
             line = i.strip().split("\t")
+            print(i)
             if i.startswith("#"):
                 for n, j in enumerate(line):
                     head[j.replace("#", "")] = n
@@ -196,6 +232,12 @@ class ALL2():
             except KeyError:
                 case_in_vcf = case
                 control_in_vcf = control
+
+            try:
+                bedfile = line[head["Inclusion_region"]]
+            except:
+                bedfile = None
+
             filename = line[head["Filename"]]
             pair = (case, control)
             if filename.endswith("vcf.gz"):
@@ -205,9 +247,28 @@ class ALL2():
             else:
                 print("Please make sure you provide a valid vcf file")
                 exit()
+            bed_dict={}
+            if bedfile != None:
+                vcf_check = self.vcf_check_for_chr(filename)
+                for n,j in enumerate(open(bedfile)):
+                    if j.strip() == "":
+                        continue
+                    bed_line = j.strip().split("\t")
+                    if bed_line[0].startswith("chr") and vcf_check == "withoutchr":
+                        bed_line[0]=bed_line[0].replace("chr","")
+                    elif not bed_line[0].startswith("chr") and vcf_check == "withchr":
+                        bed_line[0] = "chr"+bed_line[0]
+                    chrm = bed_line[0]
+                    start = bed_line[1]
+                    end = bed_line[2]
+                    if chrm in bed_dict:
+                        bed_dict[chrm].append((int(start), int(end)))
+                    else:
+                        bed_dict[chrm] = [(int(start), int(end))]
+
             variant_head = {}
             # Reading variants from the vcf file
-            for variant in filename_fh:
+            for n,variant in enumerate(filename_fh):
                 try:
                     variant = variant.decode("utf-8")
                 except AttributeError:
@@ -222,6 +283,8 @@ class ALL2():
                                 print("Please make sure the name of case and control match the names in the vcf file.")
                                 exit()
                     continue
+                if n>1000:
+                        break
                 filter = line[variant_head["FILTER"]]
                 if filter != "PASS" and all_mutations:
                     continue
@@ -229,6 +292,8 @@ class ALL2():
                 pos = line[variant_head["POS"]]
                 ref = line[variant_head["REF"]]
                 all_alt = line[variant_head["ALT"]]
+                if chrm != "1":
+                        break
                 # Getting AD and DP field for case
                 case_format = line[variant_head["FORMAT"]].split(":")
                 try:
@@ -241,7 +306,7 @@ class ALL2():
                     ad_index = case_format.index("AD")
                 except ValueError:
                     ad_index = -1
-                if ad_index > -1  and case_genotype[ad_index] != "." :
+                if ad_index > -1  and case_genotype[ad_index] != ".":
                     case_genotype_ad = case_genotype[ad_index]
                     case_genotype_depth = sum( map(int, case_genotype_ad.split(",")))
                 else:
@@ -258,6 +323,23 @@ class ALL2():
                         variant_dict[mutation].append(pair)
                     else:
                         variant_dict[mutation] = [pair]
+                    # storing variants for excluded pairs:
+                    if bedfile == None:
+                        include_variant = "YES"
+                    else:
+                        include_variant = "NO"
+
+                    if chrm in bed_dict:
+                        for start, stop in bed_dict[chrm]:
+                            if int(pos) > start and int(pos) < stop:
+                                include_variant = "YES"
+                                break
+                    if include_variant == "NO":
+                        if mutation in variant_dict_excluded:
+                            variant_dict_excluded[mutation].append(pair)
+                        else:
+                            variant_dict_excluded[mutation] = [pair]
+
                     # storing VAFs
                     if case_genotype_ad != "Absent":
                         if case_genotype_depth != "Absent":
@@ -280,18 +362,20 @@ class ALL2():
         for pairs in pairs_vaf_dict:
             if pairs[0] not in list_of_samples:
                 list_of_samples.append(pairs[0])
-        return variant_dict, pairs_vaf_dict, list_of_samples
+        return variant_dict, variant_dict_excluded, pairs_vaf_dict, list_of_samples
 
-    def explanation_score(self, variant_dict, pairs_vaf_dict, list_of_samples, output_dir):
+    def explanation_score(self, variant_dict, variant_dict_excluded, pairs_vaf_dict, list_of_samples, output_dir):
 
         output_file = os.path.join(output_dir, "explanation_score.txt")
         output_file_fh = open(output_file, 'w')
-        output_file_fh.write("#Chrom\tPos\tRef\tAlt\tMosaic_score\tGermline_score\tNumber_of_samples_with_mutation"
+        output_file_fh.write("#Chrom\tPos\tRef\tAlt\tMosaic_score\tGermline_score\tTotal_samples"
+                             "\tNumber_of_samples_with_mutation"
                              "\tSamples_with_mutation\tVAF_of_samples_with_mutation\tNumber_of_comparision_per_sample"
+                             "\tExcluded_samples"
                              "\n")
 
         # number_of_cells_N is the total number of cells in the experiment
-        total_number_of_cells_N = len(list_of_samples)
+        total_number_of_cells_in_study = len(list_of_samples)
 
         # Preparing to store the data matrix for each mutation
         mutation_matrix_dict = {}
@@ -299,45 +383,100 @@ class ALL2():
         mutation_matrix_file_fh = open(mutation_matrix_file, 'wb')
 
         for mutation in variant_dict:
-            # pairs_list is a list of pairs the mutation was called in
-            pairs_list = variant_dict[mutation]
-            # pairs_list_n is the number of pairs the mutation was called in
-            pairs_list_n = len(pairs_list)
-            max_pairs_list_n = int(total_number_of_cells_N/2)*(total_number_of_cells_N-(int(total_number_of_cells_N/2)))
-            # cell_fraction_f is the fraction of cells carrying the mutation
+            # pairs_all_list is a list of all pairs the mutation was called in
+            pairs_all_list = variant_dict[mutation]
+            # pairs_list_n is the number of all pairs the mutation was called in
+            pairs_all_list_n = len(pairs_all_list)
+            # pairs_excluded_list is a list of pairs the mutation was called in exclusion region
             try:
-                cell_fraction_f = 1 / 2 - sqrt(1 / 4 - pairs_list_n / total_number_of_cells_N ** 2)
+                pairs_excluded_list = variant_dict_excluded[mutation]
+            except:
+                pairs_excluded_list = []
+            excluded_cases = []
+            for case,control in pairs_excluded_list:
+                if case not in excluded_cases:
+                    excluded_cases.append(case)
+                    if case in list_of_samples:
+                        list_of_samples.remove(case)
+            excluded_cases_n = len(excluded_cases)
+            # pairs_excluded_list_n is the number of pairs the mutation was called in exclusion region
+            pairs_excluded_list_n = len(pairs_excluded_list)
+            print(pairs_all_list)
+            print(pairs_excluded_list)
+            print(excluded_cases)
+            print(excluded_cases_n)
+            total_number_of_cells_N = total_number_of_cells_in_study - excluded_cases_n
+            pairs_list_n = pairs_all_list_n - pairs_excluded_list_n
+
+            ## not sure waht the following line is. I think i wrote it for handling some error . Need to check later
+            max_pairs_list_n = int(total_number_of_cells_N/2)*(total_number_of_cells_N-(int(total_number_of_cells_N/2)))
+
+            # cell_fraction_f is the fraction of cells carrying the mutation
+            print("pairs_all_list_n, pairs_excluded_list_n, total_number_of_cells_in_study, excluded_cases_n, total_number_of_cells_N, pairs_list_n")
+            print(pairs_all_list_n, pairs_excluded_list_n, total_number_of_cells_in_study, excluded_cases_n,
+                  total_number_of_cells_N, pairs_list_n)
+            try:
+                cell_fraction_f = float(1 / 2 - sqrt(1 / 4 - pairs_list_n / total_number_of_cells_N ** 2))
             except ValueError:
+                print("Cell_fraction_error")
+                continue
+            print("cell fraction=",cell_fraction_f)
+            if cell_fraction_f == 0.0:
                 continue
             # is the number of cells carrying the mutation
             cells_carrying_mutation_Nv = round(cell_fraction_f * total_number_of_cells_N)
             # Creating an 'zero' data frame/matrix and updating mutation specific dataframe/matrix
             mutation_df = pd.DataFrame(np.zeros((total_number_of_cells_N, total_number_of_cells_N)),
                                        index=list_of_samples, columns=list_of_samples)
+            print(mutation_df)
             list_of_cases_with_mutation = []
             list_of_vaf_cases_with_mutation = []
             list_of_comparision_for_case = []
+            list_of_excluded_cases = []
             case_dict = {}
-            for case, control in pairs_list:
+            case_excluded_dict = {}
+
+            for case, control in pairs_excluded_list:
+                vaf = str(pairs_vaf_dict[(case, control)][mutation][0])
+                if case in case_dict:
+                    case_excluded_dict[case][0] = vaf
+                    case_excluded_dict[case][1] = str(int(case_excluded_dict[case][1]) + 1)
+                else:
+                    case_excluded_dict[case] = [vaf, "1"]
+
+            for case, control in pairs_all_list:
                 vaf = str(pairs_vaf_dict[(case, control)][mutation][0])
                 if case in case_dict:
                     case_dict[case][0] = vaf
                     case_dict[case][1] = str(int(case_dict[case][1]) + 1)
                 else:
                     case_dict[case] = [vaf, "1"]
-
-                mutation_df.loc[case, control] = 1
+                if case not in case_excluded_dict and control not in case_excluded_dict:
+                    mutation_df.loc[case, control] = 1
 
             for case in case_dict:
                 list_of_cases_with_mutation.append(case)
                 list_of_vaf_cases_with_mutation.append(case_dict[case][0])
-                list_of_comparision_for_case.append(case_dict[case][1])
+                if case not in case_excluded_dict:
+                    list_of_comparision_for_case.append(case_dict[case][1])
+            for case in case_excluded_dict:
+                list_of_excluded_cases.append(case)
+            if list_of_excluded_cases == []:
+                excluded_cases = "-"
+            else:
+                excluded_cases = ",".join(list_of_excluded_cases)
 
             mutation_matrix_dict["_".join(mutation.split("\t"))] = mutation_df
 
             # calculating explanation score
+            print(mutation_df)
+            print(cell_fraction_f)
+            print(cells_carrying_mutation_Nv)
             ordered_col_sum = mutation_df.sum(axis=1).sort_values(ascending=False)
+            print(ordered_col_sum)
+
             ordered_row_sum = mutation_df.sum(axis=0).sort_values(ascending=False)
+            print(ordered_row_sum)
             explained_call_n_mosaic = ordered_col_sum[:cells_carrying_mutation_Nv].sum()
             explained_call_n_germ = ordered_row_sum[:cells_carrying_mutation_Nv].sum()
             explanation_score_mosaic = explained_call_n_mosaic / pairs_list_n
@@ -350,10 +489,12 @@ class ALL2():
             output_line = "\t".join(["\t".join(mutation.split("\t")),
                                      str(explanation_score_mosaic),
                                      str(explanation_score_germ),
+                                     str(total_number_of_cells_in_study),
                                      str(len(list_of_cases_with_mutation)),
                                      cells_with_mutation,
                                      vaf_of_samples_with_mutation,
-                                     comparision_for_case])
+                                     comparision_for_case,
+                                     excluded_cases])
             output_file_fh.write(output_line + "\n")
 
         pickle.dump(mutation_matrix_dict, mutation_matrix_file_fh)
@@ -364,7 +505,7 @@ class ALL2():
         explanation_score = os.path.join(output_dir, "explanation_score.txt")
 
         # Plotting germline versus mosaic score scatter plot
-        df_es = pd.read_table(explanation_score)
+        df_es = pd.read_csv(explanation_score, sep="\t")
         x = df_es["Mosaic_score"]
         y = df_es["Germline_score"]
         size_dict = {}
@@ -469,14 +610,14 @@ class ALL2():
 
         # Extracting variant information from the manifest file.
         print("Extracting variant information")
-        variant_dict, pairs_vaf_dict, list_of_samples = self.extract_mutation_information(manifest_file, output_dir,all_mutations)
+        variant_dict, variant_dict_excluded, pairs_vaf_dict, list_of_samples = self.extract_mutation_information(manifest_file, output_dir,all_mutations)
         # variant_dict={mutation:[(case,control)]}
         # pairs_vaf_dict={pairs:{mutation:[vaf]}}
         # list_of_samples = list of all samples in the analysis
 
         # Generating explanation score
         print("Generating explanation scores")
-        self.explanation_score(variant_dict, pairs_vaf_dict, list_of_samples, output_dir)
+        self.explanation_score(variant_dict, variant_dict_excluded, pairs_vaf_dict, list_of_samples, output_dir)
 
         # Plotting
         print("Plotting")
@@ -762,8 +903,7 @@ class ALL2():
         af_cutoff = float(arg.af_cutoff)
         mosaic_score_cutoff = float(arg.mosaic_score_cutoff)
         germline_score_cutoff = float(arg.germline_score_cutoff)
-        percent_cut_off_germline = 0.5
-        percent_cut_off_mosaic = 0.95
+
 
         Util.ensure_dir(output_dir)
         explanation_score_file = os.path.join(get_score_dir, "explanation_score.txt")
@@ -771,19 +911,6 @@ class ALL2():
         head = {}
 
         df_manifest = pd.read_table(explanation_score_file)
-
-        # Future may be: this block determines the mosaic_cutoff_for_germline_mutations and germline_cutoff_for_mosaic_mutations,
-        '''
-        mosaic_scores_for_germline_score_1 = df_manifest[df_manifest["Germline_score"] == 1]["Mosaic_score"].sort_values()
-        germline_scores_for_mosaic_score_1 = df_manifest[df_manifest["Mosaic_score"] == 1]["Germline_score"].sort_values()
-
-        index_of_mosaic_cutoff_for_germline_mutations = round(mosaic_scores_for_germline_score_1.size * percent_cut_off_germline)
-        index_of_germline_cutoff_for_mosaic_mutations = round(germline_scores_for_mosaic_score_1.size * percent_cut_off_mosaic)
-
-        mosaic_cutoff_for_germline_mutations = mosaic_scores_for_germline_score_1.iloc[index_of_mosaic_cutoff_for_germline_mutations]
-        germline_cutoff_for_mosaic_mutations = germline_scores_for_mosaic_score_1.iloc[index_of_germline_cutoff_for_mosaic_mutations]
-        '''
-        # end of block
 
         mosaic_cutoff_for_germline_mutations = float(arg.mosaic_score_cutoff_for_germline)
         germline_cutoff_for_mosaic_mutations = float(arg.germline_score_cutoff_for_mosaic)
