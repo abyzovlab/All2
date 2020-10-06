@@ -87,12 +87,12 @@ This is the first step and the other two commands will need the output from this
 This options takes in a manifest file and output directory as its input. The manifest
 file should have the following format (see manifest_file.txt):
 
-#Control|Case|Control_in_vcf|Case_in_vcf|Filename
----|---|---|---|---
-control_1|case_1|control_in_vcf_1|case_in_vcf_1|path/to/file_1_1.vcf
-control_1|case_2|control_in_vcf_1|case_in_vcf_2|path/to/file_1_2.vcf
-....|....|....|....|....
-control_n|case_m|control_in_vcf_n|case_in_vcf_m|path/to/file_n_m.vcf
+#Control|Case|Control_in_vcf|Case_in_vcf|Filename|Inclusion_region
+---|---|---|---|---|---
+control_1|case_1|control_in_vcf_1|case_in_vcf_1|path/to/file_1_1.vcf|path/to/file_1.bed
+control_1|case_2|control_in_vcf_1|case_in_vcf_2|path/to/file_1_2.vcf|path/to/file_2.bed
+....|....|....|....|....|....
+control_n|case_m|control_in_vcf_n|case_in_vcf_m|path/to/file_n_m.vcf|path/to/file_m.bed
 ##### Note:
 1. The columns "Control_in_vcf" and "Case_in_vcf" are optional and can be used when the 
 "Control" and "Case" name don't match the control and case inside the vcf file.
