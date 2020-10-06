@@ -14,7 +14,7 @@ from math import sqrt
 import pickle
 import matplotlib.pyplot as plt
 from subprocess import PIPE, Popen
-
+from matplotlib.patches import Rectangle
 
 class ALL2():
     def __init__(self):
@@ -124,10 +124,10 @@ class ALL2():
             germline_score = line[head["Germline_score"]]
             samples = line[head["Samples_with_mutation"]].split(",")
             vaf_samples = line[head["VAF_of_samples_with_mutation"]].split(",")
-            excluded_samples = line[head["Excluded_samples"]]
+            excluded_samples = line[head["Excluded_samples"]].split(",")
             mutation = "_".join([chrm, pos, ref, alt])
             mutation_related_info = {"mosaic_score": mosaic_score, "germline_score": germline_score,
-                                     "sample": samples, "vaf_samples": vaf_samples}
+                                     "sample": samples, "vaf_samples": vaf_samples, "excluded_samples":excluded_samples}
             explanation_dict[mutation] = mutation_related_info
 
         # loading pickle file
@@ -179,16 +179,16 @@ class ALL2():
 
             ## graying out unused samples
             ylabel = ax1.get_yticklabels()
-            xlabel = ax2.get_xticklabels()
+            xlabel = ax1.get_xticklabels()
+            excluded_samples = explanation_dict[mutation]["excluded_samples"]
             for n_x, x in enumerate(xlabel):
-                if x.get_text() in excluded_sample:
-                    g.add_patch(
+                if x.get_text() in excluded_samples:
+                    ax1.add_patch(
                         Rectangle((n_x, 0), 1, len(ylabel), alpha=0.5, edgecolor=None, color='gray', lw=None, ls=None))
             for n_y, y in enumerate(ylabel):
-                if y.get_text() in excluded_sample:
-                    g.add_patch(
+                if y.get_text() in excluded_samples:
+                    ax1.add_patch(
                         Rectangle((0, n_y), len(xlabel), 1, alpha=0.5, edgecolor=None, color='gray', lw=None, ls=None))
-
             plt.tight_layout()
             plt.savefig(os.path.join(output_dir, mutation + ".png"))
             plt.close()
@@ -364,7 +364,7 @@ class ALL2():
                 list_of_samples.append(pairs[0])
         return variant_dict, variant_dict_excluded, pairs_vaf_dict, list_of_samples
 
-    def explanation_score(self, variant_dict, variant_dict_excluded, pairs_vaf_dict, list_of_samples, output_dir):
+    def explanation_score(self, variant_dict, variant_dict_excluded, pairs_vaf_dict, master_list_of_samples, output_dir):
 
         output_file = os.path.join(output_dir, "explanation_score.txt")
         output_file_fh = open(output_file, 'w')
@@ -375,7 +375,7 @@ class ALL2():
                              "\n")
 
         # number_of_cells_N is the total number of cells in the experiment
-        total_number_of_cells_in_study = len(list_of_samples)
+        total_number_of_cells_in_study = len(master_list_of_samples)
 
         # Preparing to store the data matrix for each mutation
         mutation_matrix_dict = {}
@@ -383,6 +383,8 @@ class ALL2():
         mutation_matrix_file_fh = open(mutation_matrix_file, 'wb')
 
         for mutation in variant_dict:
+            list_of_samples = master_list_of_samples[:]
+
             # pairs_all_list is a list of all pairs the mutation was called in
             pairs_all_list = variant_dict[mutation]
             # pairs_list_n is the number of all pairs the mutation was called in
@@ -401,10 +403,7 @@ class ALL2():
             excluded_cases_n = len(excluded_cases)
             # pairs_excluded_list_n is the number of pairs the mutation was called in exclusion region
             pairs_excluded_list_n = len(pairs_excluded_list)
-            print(pairs_all_list)
-            print(pairs_excluded_list)
-            print(excluded_cases)
-            print(excluded_cases_n)
+
             total_number_of_cells_N = total_number_of_cells_in_study - excluded_cases_n
             pairs_list_n = pairs_all_list_n - pairs_excluded_list_n
 
@@ -412,15 +411,12 @@ class ALL2():
             max_pairs_list_n = int(total_number_of_cells_N/2)*(total_number_of_cells_N-(int(total_number_of_cells_N/2)))
 
             # cell_fraction_f is the fraction of cells carrying the mutation
-            print("pairs_all_list_n, pairs_excluded_list_n, total_number_of_cells_in_study, excluded_cases_n, total_number_of_cells_N, pairs_list_n")
-            print(pairs_all_list_n, pairs_excluded_list_n, total_number_of_cells_in_study, excluded_cases_n,
-                  total_number_of_cells_N, pairs_list_n)
+
             try:
-                cell_fraction_f = float(1 / 2 - sqrt(1 / 4 - pairs_list_n / total_number_of_cells_N ** 2))
+                cell_fraction_f = float(1 / 2 - float(sqrt(1 / 4 - float(pairs_list_n / (total_number_of_cells_N ** 2)))))
             except ValueError:
                 print("Cell_fraction_error")
                 continue
-            print("cell fraction=",cell_fraction_f)
             if cell_fraction_f == 0.0:
                 continue
             # is the number of cells carrying the mutation
@@ -428,7 +424,8 @@ class ALL2():
             # Creating an 'zero' data frame/matrix and updating mutation specific dataframe/matrix
             mutation_df = pd.DataFrame(np.zeros((total_number_of_cells_N, total_number_of_cells_N)),
                                        index=list_of_samples, columns=list_of_samples)
-            print(mutation_df)
+            mutation_df_for_matrix = pd.DataFrame(np.zeros((total_number_of_cells_in_study,total_number_of_cells_in_study)),
+                                       index=master_list_of_samples, columns=master_list_of_samples)
             list_of_cases_with_mutation = []
             list_of_vaf_cases_with_mutation = []
             list_of_comparision_for_case = []
@@ -451,6 +448,7 @@ class ALL2():
                     case_dict[case][1] = str(int(case_dict[case][1]) + 1)
                 else:
                     case_dict[case] = [vaf, "1"]
+                mutation_df_for_matrix.loc[case, control] = 1
                 if case not in case_excluded_dict and control not in case_excluded_dict:
                     mutation_df.loc[case, control] = 1
 
@@ -466,17 +464,15 @@ class ALL2():
             else:
                 excluded_cases = ",".join(list_of_excluded_cases)
 
-            mutation_matrix_dict["_".join(mutation.split("\t"))] = mutation_df
+            mutation_matrix_dict["_".join(mutation.split("\t"))] = mutation_df_for_matrix
 
             # calculating explanation score
-            print(mutation_df)
-            print(cell_fraction_f)
-            print(cells_carrying_mutation_Nv)
+
             ordered_col_sum = mutation_df.sum(axis=1).sort_values(ascending=False)
-            print(ordered_col_sum)
+
 
             ordered_row_sum = mutation_df.sum(axis=0).sort_values(ascending=False)
-            print(ordered_row_sum)
+
             explained_call_n_mosaic = ordered_col_sum[:cells_carrying_mutation_Nv].sum()
             explained_call_n_germ = ordered_row_sum[:cells_carrying_mutation_Nv].sum()
             explanation_score_mosaic = explained_call_n_mosaic / pairs_list_n
