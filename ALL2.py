@@ -172,11 +172,10 @@ class ALL2():
                               edgecolor='blue', alpha=0.5)
             ax2.invert_yaxis()
             ax2.axis("off")
-            ax1.set_title(mutation)
             ax2.set_title("VAF", fontsize=10)
-            # mosaic_score = explanation_dict[mutation]["mosaic_score"]
-            # germline_score = explanation_dict[mutation]["germline_score"]
-
+            mosaic_score = explanation_dict[mutation]["mosaic_score"]
+            germline_score = explanation_dict[mutation]["germline_score"]
+            ax1.set_title(mutation+"\nMosaic_score="+str(mosaic_score)[:4]+";Germline_score="+str(germline_score)[:4])
             ## graying out unused samples
             ylabel = ax1.get_yticklabels()
             xlabel = ax1.get_xticklabels()
@@ -283,8 +282,7 @@ class ALL2():
                                 print("Please make sure the name of case and control match the names in the vcf file.")
                                 exit()
                     continue
-                if n>1000:
-                        break
+
                 filter = line[variant_head["FILTER"]]
                 if filter != "PASS" and all_mutations:
                     continue
@@ -292,8 +290,7 @@ class ALL2():
                 pos = line[variant_head["POS"]]
                 ref = line[variant_head["REF"]]
                 all_alt = line[variant_head["ALT"]]
-                if chrm != "1":
-                        break
+
                 # Getting AD and DP field for case
                 case_format = line[variant_head["FORMAT"]].split(":")
                 try:
@@ -334,12 +331,6 @@ class ALL2():
                             if int(pos) > start and int(pos) < stop:
                                 include_variant = "YES"
                                 break
-                    if include_variant == "NO":
-                        if mutation in variant_dict_excluded:
-                            variant_dict_excluded[mutation].append(pair)
-                        else:
-                            variant_dict_excluded[mutation] = [pair]
-
                     # storing VAFs
                     if case_genotype_ad != "Absent":
                         if case_genotype_depth != "Absent":
@@ -349,6 +340,13 @@ class ALL2():
                             vaf = "Absent"
                     else:
                         vaf = "Absent"
+
+                    if include_variant == "NO":
+                        if vaf == "Absent" or float(vaf) < 0.5:
+                            if mutation in variant_dict_excluded:
+                                variant_dict_excluded[mutation].append(pair)
+                            else:
+                                variant_dict_excluded[mutation] = [pair]
                     # creating a dictionary of dictionary ({pairs:{mutation:[vaf]}})
                     if pair in pairs_vaf_dict.keys():
                         if mutation in pairs_vaf_dict[pair].keys():
