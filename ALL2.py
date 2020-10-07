@@ -513,16 +513,19 @@ class ALL2():
         for n, i in enumerate(x):
             score_pair = str(i) + "_" + str(y[n])
             size.append(float(size_dict[score_pair]))
-        df_es.plot.scatter("Mosaic_score", "Germline_score", c=size, s=[float(s / 10.0) for s in size], cmap='tab10')
+        df_es.plot.scatter("Mosaic_score", "Germline_score", c=size, s=[float(s / 10.0) for s in size], cmap='tab10', colorbar = True)
         plt.tight_layout()
         plt.savefig(os.path.join(output_dir, "Explanation_score_scatter.png"))
         plt.close()
 
     def plot_curve(self, x, mosaic_score_cut, germ_score_cut):
+
         y_curve = np.multiply(np.sqrt(np.subtract(1,
-                                                  np.divide(np.power(x, 2),
-                                                            np.power(mosaic_score_cut, 2)))),
+                                       np.divide(np.power(x, 2),
+                                        np.power(mosaic_score_cut, 2)))),
                               germ_score_cut)
+
+
         return y_curve
 
     def plot_score_annotate(self, explanation_score_file, output_dir, mosaic_score, germline_score,mosaic_cutoff_for_germline_mutations,
@@ -548,7 +551,7 @@ class ALL2():
         for n, i in enumerate(x):
             score_pair = str(i) + "_" + str(y[n])
             size.append(float(size_dict[score_pair]))
-        ax = df_es.plot.scatter("Mosaic_score", "Germline_score", c=size, s=[float(s / 10.0) for s in size], cmap='tab10')
+        ax = df_es.plot.scatter("Mosaic_score", "Germline_score", c=size, s=[float(s / 10.0) for s in size], cmap = 'tab10', colorbar = True)
         x_curve = np.linspace(0.0, mosaic_score_cut, points_to_plot)
         y_curve = self.plot_curve(x_curve, mosaic_score_cut, germ_score_cut)
         line_color = 'black'
@@ -578,7 +581,6 @@ class ALL2():
         x_end_point = self.plot_curve([0], germ_score_cut, mosaic_score_cut)[0]
         x_mosaic = np.linspace(x_start_point, 1, points_to_plot)
         y_mosaic = self.plot_curve(x_mosaic, mosaic_score_cut, germ_score_cut)
-        # print(y_mosaic)
         y_mosaic = []
         for i in x_mosaic:
             if i < x_end_point:
