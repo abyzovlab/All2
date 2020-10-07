@@ -133,10 +133,12 @@ python ALL2.py score -m manifest_file.txt -o output_example/
     **Alt**| Alternate allele
     **Mosaic_score**| Mosaic score for the mutation
     **Germline_score**| Germline score for the mutation
+    **Total_samples**| Total number of samples in the study
     **Number_of_samples_with_mutation**| Number of samples/pairs where the mutation was called
     **Samples_with_mutation**| Name of the samples which have the mutation (comma separated values)
     **VAF_of_samples_with_mutation**| Variant allele frequency for the mutation for each sample (comma separated values)
     **Number_of_comparision_per_sample**| Number of comparison where this mutation was found in a sample(comma separated value)
+    **Excluded_samples**| Samples excluded because of allele drop out
  1. "Explanation_score_scatter.png" which shows the distribution of 
  mutations in terms of mosaic and germline scores. This plot is helpful to 
  determine the mosaic and germline score to use for calling mosaic and germline 
