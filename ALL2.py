@@ -360,7 +360,6 @@ class ALL2():
             chrm, pos, ref, alt = mutation.split("\t")
             # all cases not in the inclusion region
             for case in list_of_samples:
-                print(case)
                 try:
                     mutation_vaf = pairs_vaf_dict[case][mutation]
                 except KeyError:
