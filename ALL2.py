@@ -213,18 +213,22 @@ class ALL2():
 
     def extract_mutation_information(self, manifest_file, output_dir, all_mutations):
         variant_dict = {}
-        variant_dict_excluded ={}
         pairs_vaf_dict = {}
         head = {}
+        manifest_bed_dict = {}
+        list_of_samples = []
+        # reading manifest file
         for i in open(manifest_file):
             line = i.strip().split("\t")
-            print(i)
+
             if i.startswith("#"):
                 for n, j in enumerate(line):
                     head[j.replace("#", "")] = n
                 continue
             case = line[head["Case"]]
             control = line[head["Control"]]
+            if case not in list_of_samples:
+                list_of_samples.append(case)
             try:
                 case_in_vcf = line[head["Case_in_vcf"]]
                 control_in_vcf = line[head["Control_in_vcf"]]
@@ -246,25 +250,28 @@ class ALL2():
             else:
                 print("Please make sure you provide a valid vcf file")
                 exit()
+            # creating a dictionary to store bed file information
             bed_dict={}
-            if bedfile != None:
-                vcf_check = self.vcf_check_for_chr(filename)
-                for n,j in enumerate(open(bedfile)):
-                    if j.strip() == "":
-                        continue
-                    bed_line = j.strip().split("\t")
-                    if bed_line[0].startswith("chr") and vcf_check == "withoutchr":
-                        bed_line[0]=bed_line[0].replace("chr","")
-                    elif not bed_line[0].startswith("chr") and vcf_check == "withchr":
-                        bed_line[0] = "chr"+bed_line[0]
-                    chrm = bed_line[0]
-                    start = bed_line[1]
-                    end = bed_line[2]
-                    if chrm in bed_dict:
-                        bed_dict[chrm].append((int(start), int(end)))
-                    else:
-                        bed_dict[chrm] = [(int(start), int(end))]
+            if case not in manifest_bed_dict:
+                if bedfile != None:
+                    vcf_check = self.vcf_check_for_chr(filename)
+                    for n,j in enumerate(open(bedfile)):
+                        if j.strip() == "":
+                            continue
+                        bed_line = j.strip().split("\t")
+                        if bed_line[0].startswith("chr") and vcf_check == "withoutchr":
+                            bed_line[0]=bed_line[0].replace("chr","")
+                        elif not bed_line[0].startswith("chr") and vcf_check == "withchr":
+                            bed_line[0] = "chr"+bed_line[0]
+                        chrm = bed_line[0]
+                        start = bed_line[1]
+                        end = bed_line[2]
+                        if chrm in bed_dict:
+                            bed_dict[chrm].append((int(start), int(end)))
+                        else:
+                            bed_dict[chrm] = [(int(start), int(end))]
 
+                manifest_bed_dict[case] = bed_dict
             variant_head = {}
             # Reading variants from the vcf file
             for n,variant in enumerate(filename_fh):
@@ -282,7 +289,7 @@ class ALL2():
                                 print("Please make sure the name of case and control match the names in the vcf file.")
                                 exit()
                     continue
-
+                # getting vcf information
                 filter = line[variant_head["FILTER"]]
                 if filter != "PASS" and all_mutations:
                     continue
@@ -320,17 +327,7 @@ class ALL2():
                         variant_dict[mutation].append(pair)
                     else:
                         variant_dict[mutation] = [pair]
-                    # storing variants for excluded pairs:
-                    if bedfile == None:
-                        include_variant = "YES"
-                    else:
-                        include_variant = "NO"
 
-                    if chrm in bed_dict:
-                        for start, stop in bed_dict[chrm]:
-                            if int(pos) > start and int(pos) < stop:
-                                include_variant = "YES"
-                                break
                     # storing VAFs
                     if case_genotype_ad != "Absent":
                         if case_genotype_depth != "Absent":
@@ -341,28 +338,55 @@ class ALL2():
                     else:
                         vaf = "Absent"
 
-                    if include_variant == "NO":
-                        if vaf == "Absent" or float(vaf) < 0.5:
-                            if mutation in variant_dict_excluded:
-                                variant_dict_excluded[mutation].append(pair)
-                            else:
-                                variant_dict_excluded[mutation] = [pair]
                     # creating a dictionary of dictionary ({pairs:{mutation:[vaf]}})
-                    if pair in pairs_vaf_dict.keys():
-                        if mutation in pairs_vaf_dict[pair].keys():
-                            pairs_vaf_dict[pair][mutation].append(vaf)
-                        else:
-                            pairs_vaf_dict[pair][mutation] = [vaf]
-                    else:
-                        pairs_vaf_dict[pair] = {mutation: [vaf]}
-        filename_fh.close()
-        list_of_samples = []
-        for pairs in pairs_vaf_dict:
-            if pairs[0] not in list_of_samples:
-                list_of_samples.append(pairs[0])
-        return variant_dict, variant_dict_excluded, pairs_vaf_dict, list_of_samples
+                    if case not in pairs_vaf_dict:
+                        pairs_vaf_dict[case]={mutation:vaf}
+                    elif mutation not in pairs_vaf_dict[case]:
+                        pairs_vaf_dict[case][mutation] = vaf
 
-    def explanation_score(self, variant_dict, variant_dict_excluded, pairs_vaf_dict, master_list_of_samples, output_dir):
+        filename_fh.close()
+
+        return variant_dict, manifest_bed_dict, pairs_vaf_dict, list_of_samples
+
+    def get_excluded_sample_variant_dict(self, variant_dict,pairs_vaf_dict, manifest_bed_dict, list_of_samples):
+
+        cases_to_exclude = {}
+        number_of_mutations = len(variant_dict)
+
+        for n, mutation in enumerate(variant_dict):
+            #percent_progress = int(n/number_of_mutations)
+            #sys.stdout.write("Progress="+str(percent_progress)+"%\n")
+            #sys.stdout.flush()
+            chrm, pos, ref, alt = mutation.split("\t")
+            # all cases not in the inclusion region
+            for case in list_of_samples:
+                print(case)
+                try:
+                    mutation_vaf = pairs_vaf_dict[case][mutation]
+                except KeyError:
+                    mutation_vaf = 0.0
+                if manifest_bed_dict == {}:
+                    include_variant = "YES"
+                else:
+                    include_variant = "NO"
+                    bed_dict = manifest_bed_dict[case]
+                    if chrm in bed_dict:
+                        for start, stop in bed_dict[chrm]:
+                            if int(pos) > start and int(pos) < stop:
+                                include_variant = "YES"
+                                break
+                if include_variant == "NO" and float(mutation_vaf) < 0.50:
+                    # cases to exclude
+                    if mutation not in cases_to_exclude:
+                        cases_to_exclude[mutation] = [case]
+                    else:
+                        cases_to_exclude[mutation].append(case)
+
+        return  cases_to_exclude
+
+
+
+    def explanation_score(self, variant_dict, cases_to_exclude, pairs_vaf_dict, master_list_of_samples, output_dir):
 
         output_file = os.path.join(output_dir, "explanation_score.txt")
         output_file_fh = open(output_file, 'w')
@@ -382,23 +406,24 @@ class ALL2():
 
         for mutation in variant_dict:
             list_of_samples = master_list_of_samples[:]
-
             # pairs_all_list is a list of all pairs the mutation was called in
             pairs_all_list = variant_dict[mutation]
             # pairs_list_n is the number of all pairs the mutation was called in
             pairs_all_list_n = len(pairs_all_list)
             # pairs_excluded_list is a list of pairs the mutation was called in exclusion region
-            try:
-                pairs_excluded_list = variant_dict_excluded[mutation]
-            except:
-                pairs_excluded_list = []
-            excluded_cases = []
-            for case,control in pairs_excluded_list:
-                if case not in excluded_cases:
-                    excluded_cases.append(case)
+            if mutation in cases_to_exclude:
+                excluded_cases = cases_to_exclude[mutation]
+            else:
+                excluded_cases = []
+            excluded_cases_n = len(excluded_cases)
+            pairs_excluded_list = []
+            for case in excluded_cases:
+                for pair in pairs_all_list:
+                    if case in pair:
+                        if pair not in pairs_excluded_list:
+                            pairs_excluded_list.append(pair)
                     if case in list_of_samples:
                         list_of_samples.remove(case)
-            excluded_cases_n = len(excluded_cases)
             # pairs_excluded_list_n is the number of pairs the mutation was called in exclusion region
             pairs_excluded_list_n = len(pairs_excluded_list)
 
@@ -409,13 +434,23 @@ class ALL2():
             max_pairs_list_n = int(total_number_of_cells_N/2)*(total_number_of_cells_N-(int(total_number_of_cells_N/2)))
 
             # cell_fraction_f is the fraction of cells carrying the mutation
+            #print(pairs_all_list_n, pairs_excluded_list_n)
+            #print(total_number_of_cells_in_study, excluded_cases_n)
 
             try:
                 cell_fraction_f = float(1 / 2 - float(sqrt(1 / 4 - float(pairs_list_n / (total_number_of_cells_N ** 2)))))
             except ValueError:
-                print("Cell_fraction_error")
+                #print(pairs_all_list_n, pairs_excluded_list_n)
+                #print(total_number_of_cells_in_study, excluded_cases_n)
+                #print("cell_fraction error for mutation, "+"_".join(mutation.split("\t"))+". Skipping mutation")
+                continue
+            except ZeroDivisionError:
+                #print("Mutation,"+"_".join(mutation.split("\t"))+" not in inclusion region for any samples, skipping mutation")
+                #print(pairs_all_list_n, pairs_excluded_list_n)
+                #print(total_number_of_cells_in_study, excluded_cases_n)
                 continue
             if cell_fraction_f == 0.0:
+                #print("zero cell fraction")
                 continue
             # is the number of cells carrying the mutation
             cells_carrying_mutation_Nv = round(cell_fraction_f * total_number_of_cells_N)
@@ -432,7 +467,8 @@ class ALL2():
             case_excluded_dict = {}
 
             for case, control in pairs_excluded_list:
-                vaf = str(pairs_vaf_dict[(case, control)][mutation][0])
+                vaf = str(pairs_vaf_dict[case][mutation])
+
                 if case in case_dict:
                     case_excluded_dict[case][0] = vaf
                     case_excluded_dict[case][1] = str(int(case_excluded_dict[case][1]) + 1)
@@ -440,7 +476,7 @@ class ALL2():
                     case_excluded_dict[case] = [vaf, "1"]
 
             for case, control in pairs_all_list:
-                vaf = str(pairs_vaf_dict[(case, control)][mutation][0])
+                vaf = str(pairs_vaf_dict[case][mutation])
                 if case in case_dict:
                     case_dict[case][0] = vaf
                     case_dict[case][1] = str(int(case_dict[case][1]) + 1)
@@ -455,7 +491,7 @@ class ALL2():
                 list_of_vaf_cases_with_mutation.append(case_dict[case][0])
                 if case not in case_excluded_dict:
                     list_of_comparision_for_case.append(case_dict[case][1])
-            for case in case_excluded_dict:
+            for case in excluded_cases:
                 list_of_excluded_cases.append(case)
             if list_of_excluded_cases == []:
                 excluded_cases = "-"
@@ -606,14 +642,19 @@ class ALL2():
 
         # Extracting variant information from the manifest file.
         print("Extracting variant information")
-        variant_dict, variant_dict_excluded, pairs_vaf_dict, list_of_samples = self.extract_mutation_information(manifest_file, output_dir,all_mutations)
+        variant_dict, manifest_bed_dict, pairs_vaf_dict, list_of_samples = self.extract_mutation_information(manifest_file, output_dir,all_mutations)
         # variant_dict={mutation:[(case,control)]}
-        # pairs_vaf_dict={pairs:{mutation:[vaf]}}
+        # pairs_vaf_dict={case:{mutation:[vaf]}}
         # list_of_samples = list of all samples in the analysis
+
+        # Generating excluded samples based on inclusion list in the manifest
+        if manifest_bed_dict != {}:
+            print("Extracting excluded samples")
+            cases_to_exclude = self.get_excluded_sample_variant_dict(variant_dict,pairs_vaf_dict, manifest_bed_dict, list_of_samples)
 
         # Generating explanation score
         print("Generating explanation scores")
-        self.explanation_score(variant_dict, variant_dict_excluded, pairs_vaf_dict, list_of_samples, output_dir)
+        self.explanation_score(variant_dict,  cases_to_exclude, pairs_vaf_dict, list_of_samples, output_dir)
 
         # Plotting
         print("Plotting")
