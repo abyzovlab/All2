@@ -143,20 +143,20 @@ class ALL2():
             if mutation not in mutation_matrix_dict:
                 print("Mutation " + mutation + " not found")
                 continue
-            mutation_df = mutation_matrix_dict[mutation]
+            mutation_df = mutation_matrix_dict[mutation][0]
             fig, (ax1, ax2) = plt.subplots(1, 2, gridspec_kw={'width_ratios': [8, 1]})
             sns.heatmap(mutation_df, cmap="Blues", cbar=False, ax=ax1, linewidths=.5)
             ax1.set_ylim(len(mutation_df.index), 0)
 
-            list_of_samples = explanation_dict[mutation]["sample"]
-            list_of_samples_vaf = explanation_dict[mutation]["vaf_samples"]
+            list_of_samples = mutation_matrix_dict[mutation][1]
+            list_of_samples_vaf = mutation_matrix_dict[mutation][2]
             vaf_bar_list = {}
             vaf_bar_empty = {}
             for i in mutation_df.columns:
-                if i in list_of_samples:
+                try:
                     vaf = float(list_of_samples_vaf[list_of_samples.index(i)])
-                else:
-                    vaf = 0.0
+                except ValueError:
+                    vaf = -0.1
                 vaf_bar_list[i] = vaf
                 vaf_bar_empty[i] = 1.0
             vaf_df = pd.DataFrame.from_dict(vaf_bar_list, orient='index')
@@ -165,7 +165,12 @@ class ALL2():
                         title="VAF", width=0.7)
             for n, i in enumerate(ax2.patches):
                 # get_x pulls left or right; get_height pushes up or down
-                ax2.text(0.3, n + 0.30, str(round(i.get_width() * 100)) + "%", fontsize=6, color='blue')
+                text_to_show = str(round(i.get_width() * 100))
+                if text_to_show == "-10":
+                    text_to_show = "N / A"
+                    ax2.text(0.3, n + 0.30, text_to_show, fontsize=6, color='red')
+                else:
+                    ax2.text(0.3, n + 0.30, text_to_show + "%", fontsize=6, color='Blue')
 
             vaf_df_empty.plot(kind='barh', xlim=(0.0, 1), legend=False,
                               sharex=True, ax=ax2, color='none', width=0.7,
@@ -302,22 +307,28 @@ class ALL2():
                 case_format = line[variant_head["FORMAT"]].split(":")
                 try:
                     case_genotype = line[variant_head[case_in_vcf]].split(":")
+                    control_genotype = line[variant_head[control_in_vcf]].split(":")
                 except KeyError:
                     print("Please make sure the name of the case and control in the manifest file match the"
                           " case and control specified in the vcf")
                     exit()
+                # get case, control read count information
                 try:
                     ad_index = case_format.index("AD")
                 except ValueError:
                     ad_index = -1
-                if ad_index > -1  and case_genotype[ad_index] != ".":
+                if ad_index > -1  and case_genotype[ad_index] != "." and control_genotype[ad_index] != ".":
                     case_genotype_ad = case_genotype[ad_index]
                     case_genotype_depth = sum( map(int, case_genotype_ad.split(",")))
+                    control_genotype_ad = control_genotype[ad_index]
+                    control_genotype_depth = sum(map(int, control_genotype_ad.split(",")))
                 else:
                     case_genotype_ad = "Absent"
                     case_genotype_depth = "Absent"
+                    control_genotype_ad = "Absent"
+                    control_genotype_depth = "Absent"
 
-                if case_genotype_depth == 0:
+                if case_genotype_depth == 0 or control_genotype_depth == 0:
                     continue
                 # making sure to take care of multiallelic locations
                 for n, alt in enumerate(all_alt.split(",")):
@@ -328,35 +339,59 @@ class ALL2():
                     else:
                         variant_dict[mutation] = [pair]
 
-                    # storing VAFs
+                    # storing case VAFs
                     if case_genotype_ad != "Absent":
                         if case_genotype_depth != "Absent":
                             alt_supporting_read = case_genotype_ad.split(",")[n + 1]
-                            vaf = str(float(float(alt_supporting_read) / float(case_genotype_depth)))
+                            case_vaf = str(float(float(alt_supporting_read) / float(case_genotype_depth)))
                         else:
-                            vaf = "Absent"
+                            case_vaf = "NA"
                     else:
-                        vaf = "Absent"
+                        case_vaf = "NA"
 
                     # creating a dictionary of dictionary ({pairs:{mutation:[vaf]}})
+
                     if case not in pairs_vaf_dict:
-                        pairs_vaf_dict[case]={mutation:vaf}
+                        pairs_vaf_dict[case] = {mutation:case_vaf}
                     elif mutation not in pairs_vaf_dict[case]:
-                        pairs_vaf_dict[case][mutation] = vaf
+                        pairs_vaf_dict[case][mutation] = case_vaf
+                    else:
+                        if pairs_vaf_dict[case][mutation] == "NA" and case_vaf != "NA":
+                            pairs_vaf_dict[case][mutation] = case_vaf
+                        if case_vaf != "NA":
+                            if float(pairs_vaf_dict[case][mutation]) < float(case_vaf):
+                                pairs_vaf_dict[case][mutation] = case_vaf
+                    # storing control VAFs
+                    if control_genotype_ad != "Absent":
+                        if control_genotype_depth != "Absent":
+                            alt_supporting_read = control_genotype_ad.split(",")[n + 1]
+                            control_vaf = str(float(float(alt_supporting_read) / float(control_genotype_depth)))
+                        else:
+                            control_vaf = "NA"
+                    else:
+                        control_vaf = "NA"
 
+                    # creating a dictionary of dictionary ({pairs:{mutation:[vaf]}})
+                    if control not in pairs_vaf_dict:
+                        pairs_vaf_dict[control] = {mutation:control_vaf}
+                    elif mutation not in pairs_vaf_dict[control]:
+                        pairs_vaf_dict[control][mutation] = control_vaf
+                    else:
+                        if pairs_vaf_dict[control][mutation] == "NA" and control_vaf != "NA":
+                            pairs_vaf_dict[control][mutation] = control_vaf
+                        if control_vaf != "NA":
+                            if float(pairs_vaf_dict[case][mutation]) < float(control_vaf):
+                                pairs_vaf_dict[control][mutation] = control_vaf
         filename_fh.close()
-
         return variant_dict, manifest_bed_dict, pairs_vaf_dict, list_of_samples
 
-    def get_excluded_sample_variant_dict(self, variant_dict,pairs_vaf_dict, manifest_bed_dict, list_of_samples):
+    def get_excluded_sample_variant_dict(self, variant_dict, pairs_vaf_dict, manifest_bed_dict, list_of_samples):
 
         cases_to_exclude = {}
         number_of_mutations = len(variant_dict)
 
         for n, mutation in enumerate(variant_dict):
-            #percent_progress = int(n/number_of_mutations)
-            #sys.stdout.write("Progress="+str(percent_progress)+"%\n")
-            #sys.stdout.flush()
+
             chrm, pos, ref, alt = mutation.split("\t")
             # all cases not in the inclusion region
             for case in list_of_samples:
@@ -386,7 +421,6 @@ class ALL2():
 
 
     def explanation_score(self, variant_dict, cases_to_exclude, pairs_vaf_dict, master_list_of_samples, output_dir):
-
         output_file = os.path.join(output_dir, "explanation_score.txt")
         output_file_fh = open(output_file, 'w')
         output_file_fh.write("#Chrom\tPos\tRef\tAlt\tMosaic_score\tGermline_score\tTotal_samples"
@@ -433,23 +467,14 @@ class ALL2():
             max_pairs_list_n = int(total_number_of_cells_N/2)*(total_number_of_cells_N-(int(total_number_of_cells_N/2)))
 
             # cell_fraction_f is the fraction of cells carrying the mutation
-            #print(pairs_all_list_n, pairs_excluded_list_n)
-            #print(total_number_of_cells_in_study, excluded_cases_n)
 
             try:
                 cell_fraction_f = float(1 / 2 - float(sqrt(1 / 4 - float(pairs_list_n / (total_number_of_cells_N ** 2)))))
             except ValueError:
-                #print(pairs_all_list_n, pairs_excluded_list_n)
-                #print(total_number_of_cells_in_study, excluded_cases_n)
-                #print("cell_fraction error for mutation, "+"_".join(mutation.split("\t"))+". Skipping mutation")
                 continue
             except ZeroDivisionError:
-                #print("Mutation,"+"_".join(mutation.split("\t"))+" not in inclusion region for any samples, skipping mutation")
-                #print(pairs_all_list_n, pairs_excluded_list_n)
-                #print(total_number_of_cells_in_study, excluded_cases_n)
                 continue
             if cell_fraction_f == 0.0:
-                #print("zero cell fraction")
                 continue
             # is the number of cells carrying the mutation
             cells_carrying_mutation_Nv = round(cell_fraction_f * total_number_of_cells_N)
@@ -464,10 +489,8 @@ class ALL2():
             list_of_excluded_cases = []
             case_dict = {}
             case_excluded_dict = {}
-
             for case, control in pairs_excluded_list:
                 vaf = str(pairs_vaf_dict[case][mutation])
-
                 if case in case_dict:
                     case_excluded_dict[case][0] = vaf
                     case_excluded_dict[case][1] = str(int(case_excluded_dict[case][1]) + 1)
@@ -497,7 +520,14 @@ class ALL2():
             else:
                 excluded_cases = ",".join(list_of_excluded_cases)
 
-            mutation_matrix_dict["_".join(mutation.split("\t"))] = mutation_df_for_matrix
+            # creating dictionary for pickle file
+            vaf_of_samples = []
+            for sample in master_list_of_samples:
+                try:
+                    vaf_of_samples.append(pairs_vaf_dict[sample][mutation])
+                except KeyError:
+                    vaf_of_samples.append("NA")
+            mutation_matrix_dict["_".join(mutation.split("\t"))] = [mutation_df_for_matrix, master_list_of_samples, vaf_of_samples]
 
             # calculating explanation score
 
@@ -554,13 +584,14 @@ class ALL2():
         plt.close()
 
     def plot_curve(self, x, mosaic_score_cut, germ_score_cut):
-
-        y_curve = np.multiply(np.sqrt(np.subtract(1,
+        np.seterr(all='raise')
+        try:
+            y_curve = np.multiply(np.sqrt(np.subtract(1,
                                        np.divide(np.power(x, 2),
                                         np.power(mosaic_score_cut, 2)))),
                               germ_score_cut)
-
-
+        except:
+            return
         return y_curve
 
     def plot_score_annotate(self, explanation_score_file, output_dir, mosaic_score, germline_score,mosaic_cutoff_for_germline_mutations,
@@ -568,10 +599,10 @@ class ALL2():
         explanation_score = explanation_score_file
         mosaic_score_cut = mosaic_score
         germ_score_cut = germline_score
-        germ_score_mosaic_cut = mosaic_cutoff_for_germline_mutations    # Vivek needs to change this to 90 percentile
-        mosaic_score_germ_cut = germline_cutoff_for_mosaic_mutations    # Vivek needs to change this to 90 percentile
+        germ_score_mosaic_cut = mosaic_cutoff_for_germline_mutations
+        mosaic_score_germ_cut = germline_cutoff_for_mosaic_mutations
         # Plotting germline versus mosaic score scatter plot
-        df_es = pd.read_table(explanation_score)
+        df_es = pd.read_csv(explanation_score, sep = "\t")
         x = df_es["Mosaic_score"]
         y = df_es["Germline_score"]
         size_dict = {}
@@ -855,7 +886,7 @@ class ALL2():
         """Creates the spectrum plot"""
         global color_sig
         ylim_max = 15.0
-        df = pd.read_table(mutation_spectra_file, header=None)
+        df = pd.read_csv(mutation_spectra_file, header=None, sep = "\t")
         df = df[df.columns[0:2]]
         label = []
         top_label = []
@@ -899,6 +930,10 @@ class ALL2():
         plt.text(85, ylim_max + 1, "T>G", fontsize=12)
         output_plot = os.path.join(output_dir, sample_name + "." + variant_type + ".mutation_spectrum.png")
         a = ax.set_xticklabels(label, size=10)
+
+        for n, xtick in enumerate(ax.get_xticklabels()):
+            xtick.set_color(mycolor[n])
+
         plt.tight_layout()
         plt.savefig(output_plot)
         plt.close()
@@ -945,8 +980,6 @@ class ALL2():
         explanation_score_file = os.path.join(get_score_dir, "explanation_score.txt")
         vaf_dict = {}
         head = {}
-
-        df_manifest = pd.read_table(explanation_score_file)
 
         mosaic_cutoff_for_germline_mutations = float(arg.mosaic_score_cutoff_for_germline)
         germline_cutoff_for_mosaic_mutations = float(arg.germline_score_cutoff_for_mosaic)
@@ -997,6 +1030,7 @@ class ALL2():
         # structure of var_dict={sample:{variant_type:[(pos,vaf)]}}  ; pos = chr pos ref alt
 
         # per sample mutation file
+        print("Generation per sample files")
         per_sample_mutation_dir = os.path.join(output_dir, "per_sample_mutation")
         Util.ensure_dir(per_sample_mutation_dir)
         self.per_sample_mutation(vaf_dict,per_sample_mutation_dir,af_cutoff)
@@ -1004,17 +1038,21 @@ class ALL2():
 
 
         # plotting
+        print("Annotating explanation plot")
         self.plot_score_annotate(explanation_score_file, output_dir, mosaic_score_cutoff, germline_score_cutoff, mosaic_cutoff_for_germline_mutations,
                                  germline_cutoff_for_mosaic_mutations)
 
+        print("Plotting variant counts")
         mutation_count_output_dir = os.path.join(output_dir, "mutation_counts")
         Util.ensure_dir(mutation_count_output_dir)
         self.plot_bar(vaf_dict, af_cutoff, mutation_count_output_dir)
 
+        print("Plotting VAF plots")
         vaf_output_dir = os.path.join(output_dir, "vaf_plots")
         Util.ensure_dir(vaf_output_dir)
         self.plot_vaf(vaf_dict, af_cutoff, vaf_output_dir)
 
+        print("Plotting mutation spectrum")
         mutation_spectrum_output_dir = os.path.join(output_dir, "mutation_spectrum")
         Util.ensure_dir(mutation_spectrum_output_dir)
         self.plot_mutation_spectrum(vaf_dict, af_cutoff, mutation_spectrum_output_dir, reference)
