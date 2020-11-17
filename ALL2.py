@@ -401,7 +401,7 @@ class ALL2():
                     mutation_vaf = pairs_vaf_dict[case][mutation]
                 except KeyError:
                     mutation_vaf = 0.0
-                if manifest_bed_dict == {}:
+                if manifest_bed_dict[case] == {}:
                     include_variant = "YES"
                 else:
                     include_variant = "NO"
@@ -680,9 +680,8 @@ class ALL2():
         # list_of_samples = list of all samples in the analysis
 
         # Generating excluded samples based on inclusion list in the manifest
-        if manifest_bed_dict != {}:
-            print("Extracting excluded samples")
-            cases_to_exclude = self.get_excluded_sample_variant_dict(variant_dict,pairs_vaf_dict, manifest_bed_dict, list_of_samples)
+        print("Extracting excluded samples, if any")
+        cases_to_exclude = self.get_excluded_sample_variant_dict(variant_dict,pairs_vaf_dict, manifest_bed_dict, list_of_samples)
 
         # Generating explanation score
         print("Generating explanation scores")
