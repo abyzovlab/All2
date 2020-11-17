@@ -243,10 +243,11 @@ class ALL2():
 
             try:
                 bedfile = line[head["Inclusion_region"]]
+                if not bedfile.endswith(".bed"):
+                    bedfile = None
             except:
                 bedfile = None
-            if not bedfile.endswith(".bed"):
-                bedfile = None
+
             filename = line[head["Filename"]]
             pair = (case, control)
             if filename.endswith("vcf.gz"):
