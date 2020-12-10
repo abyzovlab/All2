@@ -165,11 +165,11 @@ class ALL2():
                         title="VAF", width=0.7)
             for n, i in enumerate(ax2.patches):
                 # get_x pulls left or right; get_height pushes up or down
-                text_to_show = str(round(i.get_width() * 100))
-                if text_to_show == "-10":
+                if i.get_width() == -0.1:
                     text_to_show = "N / A"
                     ax2.text(0.3, n + 0.30, text_to_show, fontsize=6, color='red')
                 else:
+                    text_to_show = str(round(i.get_width() * 100))
                     ax2.text(0.3, n + 0.30, text_to_show + "%", fontsize=6, color='Blue')
 
             vaf_df_empty.plot(kind='barh', xlim=(0.0, 1), legend=False,
