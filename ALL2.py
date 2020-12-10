@@ -473,10 +473,13 @@ class ALL2():
             try:
                 cell_fraction_f = float(1 / 2 - float(sqrt(1 / 4 - float(pairs_list_n / (total_number_of_cells_N ** 2)))))
             except ValueError:
+                print("Exception:cell fraction value error for mutation ", mutation)
                 continue
             except ZeroDivisionError:
+                print("Exception:cell fraction ZeroDivision error for mutation ", mutation)
                 continue
             if cell_fraction_f == 0.0:
+                print("Exception:cell fraction is zero for mutation ", mutation)
                 continue
             # is the number of cells carrying the mutation
             cells_carrying_mutation_Nv = round(cell_fraction_f * total_number_of_cells_N)
@@ -507,7 +510,7 @@ class ALL2():
                 else:
                     case_dict[case] = [vaf, "1"]
                 mutation_df_for_matrix.loc[case, control] = 1
-                if case not in case_excluded_dict and control not in case_excluded_dict:
+                if case not in excluded_cases and control not in excluded_cases:
                     mutation_df.loc[case, control] = 1
 
             for case in case_dict:
